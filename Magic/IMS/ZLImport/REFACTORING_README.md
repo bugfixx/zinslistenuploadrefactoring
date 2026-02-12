@@ -108,8 +108,8 @@ This refactoring extracts service classes from the monolithic `UploadXLS5.java` 
 - `sendMailWithChanges()` - Sends change notifications
 - `sendMailToAssetmanager(...)` - Sends to assetmanagers
 - `sendMailToAssetmanagerSingleObject(...)` - Single object notification
-- `sendMailToExcecutor(String)` - Sends to executor
-- `sendMailWithErrorsToExcecutor(...)` - Error notification to executor
+- `sendMailToExecutor(String)` - Sends to executor
+- `sendMailWithErrorsToExecutor(...)` - Error notification to executor
 - `getAssetmanagerMailadressFromObject(String)` - Gets AM email
 
 **Blockers**:

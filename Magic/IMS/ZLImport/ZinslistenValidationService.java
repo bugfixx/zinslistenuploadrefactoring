@@ -194,6 +194,10 @@ public class ZinslistenValidationService
 	 * Checks if a string represents a Leerstand (vacancy).
 	 * Maintains original logic: exact case-insensitive match for most terms,
 	 * substring match only for "leerstand".
+	 * 
+	 * NOTE: Original implementation uses case-sensitive contains("leerstand"), 
+	 * while other terms use equalsIgnoreCase(). This is preserved for backward 
+	 * compatibility, though it may miss "LEERSTAND" or "Leerstand" variants.
 	 *
 	 * @param actualmieter the mieter string to check
 	 * @return true if it represents Leerstand
@@ -205,13 +209,13 @@ public class ZinslistenValidationService
 			return false;
 		}
 		
-		// Original logic preserved: exact matches OR contains "leerstand"
+		// Original logic preserved exactly: exact matches OR case-sensitive contains "leerstand"
 		if(actualmieter.equalsIgnoreCase("leerstehung") || 
 		   actualmieter.equalsIgnoreCase("vacant") || 
 		   actualmieter.equalsIgnoreCase("vacancy") || 
 		   actualmieter.equalsIgnoreCase("leer") || 
 		   actualmieter.equalsIgnoreCase("(leer)") || 
-		   actualmieter.contains("leerstand") || 
+		   actualmieter.contains("leerstand") ||  // Note: case-sensitive in original
 		   actualmieter.equalsIgnoreCase("not rented surface"))
 		{
 			return true;

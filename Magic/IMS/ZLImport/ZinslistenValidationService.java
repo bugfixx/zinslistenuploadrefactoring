@@ -190,13 +190,10 @@ public class ZinslistenValidationService
 		return errs;
 	}
 
-	/** Common vacancy/Leerstand terms. */
-	private static final String[] VACANCY_TERMS = {
-		"leerstehung", "vacant", "vacancy", "leer", "(leer)", "leerstand", "not rented surface"
-	};
-
 	/**
 	 * Checks if a string represents a Leerstand (vacancy).
+	 * Maintains original logic: exact case-insensitive match for most terms,
+	 * substring match only for "leerstand".
 	 *
 	 * @param actualmieter the mieter string to check
 	 * @return true if it represents Leerstand
@@ -208,14 +205,18 @@ public class ZinslistenValidationService
 			return false;
 		}
 		
-		String lowerMieter = actualmieter.toLowerCase();
-		for(String term : VACANCY_TERMS)
+		// Original logic preserved: exact matches OR contains "leerstand"
+		if(actualmieter.equalsIgnoreCase("leerstehung") || 
+		   actualmieter.equalsIgnoreCase("vacant") || 
+		   actualmieter.equalsIgnoreCase("vacancy") || 
+		   actualmieter.equalsIgnoreCase("leer") || 
+		   actualmieter.equalsIgnoreCase("(leer)") || 
+		   actualmieter.contains("leerstand") || 
+		   actualmieter.equalsIgnoreCase("not rented surface"))
 		{
-			if(lowerMieter.equals(term) || lowerMieter.contains(term))
-			{
-				return true;
-			}
+			return true;
 		}
+
 		return false;
 	}
 }

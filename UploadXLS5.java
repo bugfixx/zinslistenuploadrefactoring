@@ -119,6 +119,7 @@ import Magic.IMS.ExcelUpload.xmlDefinedUpload.openitemUpload.ExcelOpenItemUpload
 import Magic.IMS.ZLImport.ZLImport;
 import Magic.IMS.ZLImport.ZLTypeConfig;
 import Magic.IMS.ZLImport.ZinslistenImportThread;
+import Magic.IMS.ZLImport.ZinslistenValidationService;
 import Magic.IMS.dwh.DWHHandler;
 import Magic.IMS.dwh.DataPackage;
 import Magic.IMS.icrsfred.csv.dao.FileUpload;
@@ -199,6 +200,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 	/** The zins zeilen cache. */
 	transient private Hashtable zinsZeilenCache = null;
+
+	/** The validation service. */
+	transient private ZinslistenValidationService validationService = null;
 
 	/** The csv str. */
 	private String csvStr = "";
@@ -395,6 +399,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 		mappingCache = new Hashtable();
 		setDBEncoding();
+		
+		// Initialize validation service
+		validationService = new ZinslistenValidationService(session, debug, DAInst);
 	}
 
 	/**
@@ -8354,28 +8361,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public String getIgnoreErrorsForHaus(String hausid)
 	{
-
-		if(DAInst == null)
+		if(validationService == null)
 		{
-			Connector conn = null;
-			conn = new Connector();
-			DAInst = conn.getDataAgent();
+			validationService = new ZinslistenValidationService(session, debug, DAInst);
 		}
-		try
-		{
-			DynGenDataObj hdgd = (DynGenDataObj)DAInst.getObject(hausid, "");
-			String ignoreerrors = (String)hdgd.get("var.ignoreerrors");
-			if(null == ignoreerrors)
-			{
-				ignoreerrors = "";
-			}
-			return ignoreerrors;
-		}
-		catch(Exception x)
-		{
-			debug.log(x);
-			return "";
-		}
+		return validationService.getIgnoreErrorsForHaus(hausid);
 	}
 
 	/**
@@ -8392,93 +8382,14 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public Zinsliste checkHausStatus(String hausid, Zinsliste zlnew, ZLTypeConfig zlTypeConfig)
 	{
+		if(validationService == null)
+		{
+			validationService = new ZinslistenValidationService(session, debug, DAInst);
+		}
 		boolean importhausstatusinaktiv = getBoolean("var.importhausstatusinaktiv", Boolean.FALSE);
-
-		// System.err.println("ZLU2: haus id "+oid_haus);
-		DynGenDataObj hausObj = null;
-		String status = null;
-		if(null != hausid && hausid.length() > 0)
-		{
-			try
-			{
-				hausObj = (DynGenDataObj)DAInst.getObject(hausid, "");
-				status = (String)hausObj.get("var.status");
-				Date dvk = hausObj.getDate("var.verkaufsdatum");
-				// Status "-9" = inaktiv
-				if(null != dvk && !importhausstatusinaktiv)
-				{
-					Date dzl = zlnew.getZinslistenDatum();
-					if(null != dzl)
-					{
-						if(dzl.after(dvk))
-						{
-							// Zinsliste ist jünger als Verkaufsdatum
-
-							if(getBoolean("var.rentrollimportaftersale", Boolean.TRUE))
-							{
-								zlnew.addError(Tr.t("textRentRollYounger", session.getString("language")), dzl.toString() + " > " + dvk.toString(), ErrorInfo.LEICHT, ErrorInfo.EINTRAGSFEHLER, "");
-							}
-							else
-							{
-								zlnew.addError(Tr.t("textRentRollYounger", session.getString("language")), dzl.toString() + " > " + dvk.toString(), ErrorInfo.SCHWER, ErrorInfo.FORMATFEHLER, "");
-							}
-						}
-					}
-				}
-				Date lastImport = TopoTool.getLastZinszeileDateforHaus(hausid);
-				// DN 20171128: wurscht was am haus steht, wenns keine zinszeile gibt, dann gibts einfach keine!
-				// if(null == lastImport)
-				// {
-				// lastImport = hausObj.getDate("var.lastimport");
-				// }
-				zlnew.setLastImportForThisHaus(lastImport);
-			}
-			catch(Exception xc)
-			{
-				log("Unbekanntes Haus mit ID " + hausid);
-				debug.log(xc);
-			}
-		}
-		if(null == status)
-		{
-			status = "";
-		}
-
-		if(status.equals("-1"))
-		{
-			// das Haus ist NICHT im Besitz ...
-			zlnew.addError(Tr.t("textObjectSold", session.getString("language")), "Status-verkauft", ErrorInfo.SCHWER, ErrorInfo.EINTRAGSFEHLER, "");
-		}
-
-		// Check Assetmanager, Gesellschaft, Geschäftsfeld
-		String hv = zlnew.getTyp();
+		boolean rentrollimportaftersale = getBoolean("var.rentrollimportaftersale", Boolean.TRUE);
 		flavour = (String)session.get("flavour");
-		if(!status.equals("9") && !hv.equals("egiriskmieter"))
-		{
-			if(0 == hausObj.getSlotsize("slot.assetmanager"))
-			{
-				if(zlTypeConfig != null && !zlTypeConfig.isIgnorekeinassetmanager())
-				{
-					zlnew.addError(Tr.t("textObjectNoAM", session.getString("language")), "", ErrorInfo.LEICHT, ErrorInfo.EINTRAGSFEHLER, "");
-				}
-			}
-			if(0 == hausObj.getSlotsize("slot.gfeld") && !flavour.equals("icrskag")) // 9545
-			{
-				if(zlTypeConfig != null && !zlTypeConfig.isIgnorekeingfeld())
-				{
-					zlnew.addError(Tr.t("textObjectNoAoB", session.getString("language")), "", ErrorInfo.LEICHT, ErrorInfo.EINTRAGSFEHLER, "");
-				}
-			}
-		}
-		if(0 == hausObj.getSlotsize("slot.gschaft"))
-		{
-			if(zlTypeConfig != null && !zlTypeConfig.isIgnorekeingschaft())
-			{
-				zlnew.addError(Tr.t("textObjectNoCompany", session.getString("language")), "", ErrorInfo.LEICHT, ErrorInfo.EINTRAGSFEHLER, "");
-			}
-		}
-
-		return zlnew;
+		return validationService.checkHausStatus(hausid, zlnew, zlTypeConfig, importhausstatusinaktiv, rentrollimportaftersale, flavour);
 	}
 
 	/**
@@ -8492,34 +8403,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public String writeIgnoreErrorsForHaus(String hausid, String errs)
 	{
-		// System.err.println("ZLU2: Writing ignore Errors...");
-		if(DAInst == null)
+		if(validationService == null)
 		{
-			Connector conn = null;
-			conn = new Connector();
-			DAInst = conn.getDataAgent();
+			validationService = new ZinslistenValidationService(session, debug, DAInst);
 		}
-		try
-		{
-			DynGenDataObj hdgd = (DynGenDataObj)DAInst.getObject(hausid, "");
-			String olderrs = (String)hdgd.get("var.ignoreerrors");
-			if(null == olderrs)
-			{
-				olderrs = "";
-			}
-			if(olderrs.length() > 0)
-			{
-				errs = new String(olderrs + "\n" + errs);
-			}
-			hdgd.set("var.ignoreerrors", errs);
-			DAInst.storeObject(hdgd, "CIMS.haus", hausid, session);
-		}
-		catch(Exception x)
-		{
-			debug.error(x);
-			return errs;
-		}
-		return errs;
+		return validationService.writeIgnoreErrorsForHaus(hausid, errs);
 	}
 
 	/**
@@ -19015,13 +18903,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public boolean checkLeerstandString(String actualmieter)
 	{
-
-		if(actualmieter.equalsIgnoreCase("leerstehung") || actualmieter.equalsIgnoreCase("vacant") || actualmieter.equalsIgnoreCase("vacancy") || actualmieter.equalsIgnoreCase("leer") || actualmieter.equalsIgnoreCase("(leer)") || actualmieter.contains("leerstand") || actualmieter.equalsIgnoreCase("not rented surface"))
+		if(validationService == null)
 		{
-			return true;
+			validationService = new ZinslistenValidationService(session, debug, DAInst);
 		}
-
-		return false;
+		return validationService.checkLeerstandString(actualmieter);
 	}
 
 	/**

@@ -267,26 +267,26 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 	/** The result. */
 	// this contains the import result for SAP Loadsequence import
-	private final Map<String, String> result = new HashMap<String, String>();
+	private final Map<String, String> result = new HashMap<>();
 
 	/** The mailinglist. */
-	private Map<String, String> mailinglist = new HashMap<String, String>();
+	private Map<String, String> mailinglist = new HashMap<>();
 
 	/** The leerstandmailinglist. */
-	private Map<String, String> leerstandmailinglist = new HashMap<String, String>();
+	private Map<String, String> leerstandmailinglist = new HashMap<>();
 
 	/** The ablaufendevertraegemailinglist. */
-	private Map<String, String> ablaufendevertraegemailinglist = new HashMap<String, String>();
+	private Map<String, String> ablaufendevertraegemailinglist = new HashMap<>();
 
 	/** The mailinglist kennwerte nach nutzung. */
-	private final Map<String, String> mailinglistKennwerteNachNutzung = new HashMap<String, String>();
+	private final Map<String, String> mailinglistKennwerteNachNutzung = new HashMap<>();
 
 	/** The assetmanager and I ds. */
-	private Map<String, String> assetmanagerAndIDs = new HashMap<String, String>();
+	private Map<String, String> assetmanagerAndIDs = new HashMap<>();
 
 	/** The top status values. */
 	// Values from TopStatusSelector.tpl
-	Map<String, Object> topStatusValues = new HashMap<String, Object>();
+	Map<String, Object> topStatusValues = new HashMap<>();
 
 	/** The statusformissingunit split. */
 	String[] statusformissingunitSplit = null;
@@ -307,7 +307,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private static Pattern FILE_NAME_PATTERN = Pattern.compile("(.*)FRED(\\d*).(csv|xlsx)");
 
 	/** The zl upload object ids. */
-	private List<String> zlUploadObjectIds = new ArrayList<String>();
+	private List<String> zlUploadObjectIds = new ArrayList<>();
 
 	/** German Locale for Digits. */
 	private DecimalFormatSymbols symbolsDE_DE = DecimalFormatSymbols.getInstance(Locale.GERMANY);
@@ -348,7 +348,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		super();
 		if(null == topsCache)
 		{
-			topsCache = new HashMap<String, Object>();
+			topsCache = new HashMap<>();
 		}
 
 		this.dao = new FredDAO();
@@ -383,7 +383,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	public UploadXLS5(GenDataClass gdc, GenDataClass gl, GenDataClass se)
 	{
 		super(gdc);
-		mapper = new HashMap<String, Object>();
+		mapper = new HashMap<>();
 		global = (DynGenDataObj)gl;
 		session = (DynGenDataObj)se;
 		this.dao = new FredDAO();
@@ -406,7 +406,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			mylang = session.getString("language");
 		}
 
-		mappingCache = new HashMap<String, Object>();
+		mappingCache = new HashMap<>();
 		setDBEncoding();
 	}
 
@@ -8217,7 +8217,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		System.err.println("ZLU2: FILLING TOPS CACHE " + topList.size() + " maximum is " + TOPS_CACHE_SIZE);
 		Date d1 = new Date();
 		topsCache = null;
-		topsCache = new HashMap<String, Object>();
+		topsCache = new HashMap<>();
 		int cnt = 0;
 		for(String toid : topList.getTopIDs())
 		{
@@ -8259,7 +8259,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private void emptyLastZZ4Top()
 	{
-		lastZZ4Top = new HashMap<String, Calendar>();
+		lastZZ4Top = new HashMap<>();
 	}
 
 	/**

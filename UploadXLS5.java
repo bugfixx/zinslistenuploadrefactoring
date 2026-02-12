@@ -9021,102 +9021,37 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public HashMap<String, HashMap<String, String>> getZinsZeilen(String[] topoids, String jahr, String monat)
 	{
-		if(null == topoids || topoids.length == 0)
+		// Delegate to database service
+		if(databaseService == null)
 		{
-			log("Abfrgae nach Zinszeilen ohne angegebene Tops.");
-			return new HashMap<>();
+			databaseService = new Magic.IMS.ZLImport.ZinslistenDatabaseService(session, debug, DAInst, this);
 		}
-
-		zinsZeilenCache = null;
-		zinsZeilenCache = new HashMap<>();
-		if(null != monat && monat.startsWith("0"))
+		
+		// Call service method and convert Map to HashMap for backward compatibility
+		Map<String, Map<String, String>> result = databaseService.getZinsZeilen(topoids, jahr, monat);
+		
+		HashMap<String, HashMap<String, String>> convertedResult = new HashMap<>();
+		if(result != null)
 		{
-			if(monat.length() == 2)
+			for(Map.Entry<String, Map<String, String>> entry : result.entrySet())
 			{
-				monat = monat.substring(1, 1);
-			}
-		}
-		else if(null == monat)
-		{
-			monat = "";
-		}
-		// System.err.println();
-		HashMap<String, Object> args = new HashMap<>();
-		ArrayList<HashMap<String, String>> res = new ArrayList<>();
-		args.put("TType", "CIMS.zinszeile");
-		// fieldClause ... Felder zum holen ,-separiert
-		args.put("fieldClause", "DOB.ID zzid,mieter,nutzung,nfl,leerfl,hauptmietzins,betriebskosten ,reparaturfond,name,DDT1.ID topid");
-		args.put("top_ID", topoids);
-		args.put("jahr", jahr);
-		args.put("monat", monat);
-
-		// BAUSTELLE
-		String mydom = (String)session.get("domainid");
-		if(mydom.length() == 0)
-		{
-			args.put("DOMAIN", "ALLDOMAINS");
-		}
-		else
-		{
-			args.put("DOMAIN", mydom);
-		}
-		// new Connector Class
-		if(null == DAInst)
-		{
-			net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
-			DAInst = conn.getDataAgent();
-		}
-		// java.util.Date start_time = new java.util.Date();
-
-		try
-		{
-			res = DAInst.queryObject(args);
-		}
-		catch(Exception x)
-		{
-			debug.log(x);
-			debug.error(x);
-		}
-		// java.util.Date end_time = new java.util.Date();
-		// long run_time = end_time.getTime() - start_time.getTime();
-
-		HashMap<String, HashMap<String, String>> top2zz = new HashMap<String, HashMap<String, String>>();
-		// System.err.println("ZLU2: res size is "+res.size());
-		for(int x = 0; x < res.size(); x++)
-		{
-			HashMap<String, String> h = res.get(x);
-			if(h != null)
-			{
-				String topid = h.get("topid");
-				String zzid = h.get("zzid");
-				if(null != topid)
+				HashMap<String, String> innerMap = new HashMap<>();
+				if(entry.getValue() != null)
 				{
-					if(null != zzid)
-					{
-						top2zz.put(topid, h);
-						zinsZeilenCache.put(zzid, "");
-					}
+					innerMap.putAll(entry.getValue());
 				}
+				convertedResult.put(entry.getKey(), innerMap);
 			}
 		}
-		// System.err.println("ZLU2: FOUND "+res.size()+" ZZ "+top2zz.toString());
-		// cache befuellen!!!!
-		if(zinsZeilenCache != null && zinsZeilenCache.size() > 0)
+		
+		// Service updates the cache via parentObject.set(), retrieve it here
+		Object cache = this.get("zinsZeilenCache");
+		if(cache instanceof HashMap)
 		{
-			// System.err.println("ZLU2: FILLING ZINSZEILEN CACHE " + zinsZeilenCache.size());
-
-			// cache befuellen !!!
-			try
-			{
-				zinsZeilenCache = DAInst.getObjects(zinsZeilenCache, "");
-				// System.err.println("ZLU2: cached " + zinsZeilenCache.size() + " zinszeilen.");
-			}
-			catch(Exception xx)
-			{
-				debug.log(xx);
-			}
+			this.zinsZeilenCache = (HashMap<String, Object>)cache;
 		}
-		return top2zz;
+		
+		return convertedResult;
 	}
 
 	/**
@@ -9132,71 +9067,22 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public Hashtable getZinsZeilenForName(String[] topoids, String jahr, String monat)
 	{
-		if(null == topoids || topoids.length == 0)
+		// Delegate to database service
+		if(databaseService == null)
 		{
-			log("Abfrage nach Zinszeilen ohne angegebene Tops.");
-			return new HashMap<>();
+			databaseService = new Magic.IMS.ZLImport.ZinslistenDatabaseService(session, debug, DAInst, this);
 		}
-
-		HashMap<String, Object> args = new HashMap<>();
-		ArrayList<Object> res = new ArrayList<>();
-		args.put("TType", "CIMS.zinszeile");
-		// fieldClause ... Felder zum holen ,-separiert
-
-		args.put("fieldClause", "DOB.ID zzid,mieter,nutzung,nfl,leerfl,hauptmietzins,betriebskosten ,reparaturfond,name,DDT1.ID topid,DDT1.name topname");
-		args.put("top_ID", topoids);
-		args.put("jahr", jahr);
-		args.put("monat", monat);
-
-		// BAUSTELLE
-		String mydom = (String)session.get("domainid");
-		if(mydom.length() == 0)
+		
+		// Call service method and convert Map to Hashtable for backward compatibility
+		Map<String, Object> result = databaseService.getZinsZeilenForName(topoids, jahr, monat);
+		
+		Hashtable<String, Object> convertedResult = new Hashtable<>();
+		if(result != null)
 		{
-			args.put("DOMAIN", "ALLDOMAINS");
+			convertedResult.putAll(result);
 		}
-		else
-		{
-			args.put("DOMAIN", mydom);
-		}
-		// new Connector Class
-		if(null == DAInst)
-		{
-			net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
-			DAInst = conn.getDataAgent();
-		}
-		// java.util.Date start_time = new java.util.Date();
-
-		try
-		{
-			res = DAInst.queryObject(args);
-		}
-		catch(Exception x)
-		{
-			debug.log(x);
-			debug.error(x);
-		}
-		// java.util.Date end_time = new java.util.Date();
-		// long run_time = end_time.getTime() - start_time.getTime();
-
-		HashMap<String, Object> top2zz = new HashMap<>();
-		// System.err.println("ZLU2: res size is "+res.size());
-		for(int x = 0; x < res.size(); x++)
-		{
-			HashMap<String, Object> h = (HashMap<String, Object>)res.get(x);
-			if(h != null)
-			{
-				String topname = (String)h.get("topname");
-				String zzid = (String)h.get("zzid");
-				if(null != topname)
-				{
-					if(null != zzid)
-					{
-						top2zz.put(topname, h);
-					}
-				}
-			}
-		}
-		return top2zz;
+		
+		return convertedResult;
 	}
 
 	/**
@@ -10233,74 +10119,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private String getAssetmanagerMailadressFromObject(String hausid)
 	{
-
-		HashMap<String, Object> args = new Hashtable<String, Object>();
-		ArgsHelper argsHelper = new ArgsHelper(args);
-		argsHelper.setMainTemplateType("CIMS.haus");
-		argsHelper.setAdvancedFields(true);
-		argsHelper.addTemplateType("assetmanager", "ICRScrm.assetmanager");
-
-		argsHelper.addField("assetmanager_name");
-		argsHelper.addField("assetmanager_email");
-		argsHelper.addWhere("DOB.ID =" + hausid);
-
-		String mydom = (String)session.get("domainid");
-		if(mydom.length() == 0)
+		// Delegate to database service
+		if(databaseService == null)
 		{
-			argsHelper.addCondition("DOMAIN", "ALLDOMAINS");
+			databaseService = new Magic.IMS.ZLImport.ZinslistenDatabaseService(session, debug, DAInst, this);
 		}
-		else
-		{
-			argsHelper.addCondition("DOMAIN", mydom);
-		}
-
-		// query result vector
-		ArrayList<HashMap<String, String>> res = null;
-		try
-		{
-			if(null == DAInst)
-			{
-				net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
-				DAInst = conn.getDataAgent();
-			}
-
-			QueryResult qr = DAInst.queryObjectWithResult(argsHelper.getArgs());
-			res = qr.getResult();
-		}
-		catch(Exception qe)
-		{
-			debug.error(this, "Exception querying objects.");
-			debug.error(qe);
-			set("var.result", "Interner Fehler:" + qe.getMessage());
-		}
-
-		if(res.size() > 0)
-		{
-			HashMap<String, String> h = res.get(0);
-
-			String mailAndName = "";
-
-			if(h.get("email").length() > 0)
-			{
-				mailAndName = h.get("email");
-			}
-			if(h.get("name").length() > 0)
-			{
-				mailAndName = mailAndName + ";" + h.get("name");
-			}
-			else
-			{
-				mailAndName = mailAndName + ";Assetmanager";
-			}
-
-			return mailAndName;
-
-		}
-		else
-		{
-			return "";
-		}
-
+		
+		return databaseService.getAssetmanagerMailadressFromObject(hausid);
 	}
 
 	/**
@@ -10310,95 +10135,22 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private HashMap<String, Object> getAlleWEsInBestand()
 	{
-		HashMap<String, HashMap<String, HashMap<String, String>>> result = new HashMap<String, HashMap<String, HashMap<String, String>>>();
-
-		HashMap<String, Object> args = new Hashtable<String, Object>();
-		ArgsHelper argsHelper = new ArgsHelper(args);
-		argsHelper.setMainTemplateType("CIMS.haus");
-		argsHelper.setAdvancedFields(true);
-		argsHelper.addTemplateType("assetmanager", "ICRScrm.assetmanager");
-
-		argsHelper.addField("ET0.identadresse1");
-		argsHelper.addField("ET0.identadresse5");
-		argsHelper.addField("ET0.plz");
-		argsHelper.addField("DOB.name", "wename");
-		argsHelper.addField("assetmanager_name");
-		argsHelper.addField("assetmanager_email");
-
-		argsHelper.addWhere("ET0.status>=0 and (ET0.verkaufsdatum is null or ET0.verkaufsdatum='' )");
-
-		String mydom = (String)session.get("domainid");
-		if(mydom.length() == 0)
+		// Delegate to database service
+		if(databaseService == null)
 		{
-			argsHelper.addCondition("DOMAIN", "ALLDOMAINS");
+			databaseService = new Magic.IMS.ZLImport.ZinslistenDatabaseService(session, debug, DAInst, this);
 		}
-		else
+		
+		// Call service and convert Map to HashMap for backward compatibility
+		Map<String, Object> result = databaseService.getAlleWEsInBestand();
+		
+		HashMap<String, Object> convertedResult = new HashMap<>();
+		if(result != null)
 		{
-			argsHelper.addCondition("DOMAIN", mydom);
+			convertedResult.putAll(result);
 		}
-
-		// query result vector
-		ArrayList<HashMap<String, String>> res = null;
-		try
-		{
-			if(null == DAInst)
-			{
-				net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
-				DAInst = conn.getDataAgent();
-			}
-
-			QueryResult qr = DAInst.queryObjectWithResult(argsHelper.getArgs());
-			res = qr.getResult();
-		}
-		catch(Exception qe)
-		{
-			debug.error(this, "Exception querying objects.");
-			debug.error(qe);
-			set("var.result", "Interner Fehler:" + qe.getMessage());
-		}
-
-		if(res.size() > 0)
-		{
-			for(int i = 0; i < res.size(); i++)
-			{
-				HashMap<String, String> h = res.get(0);
-
-				String mailAndName = "";
-
-				if(h.get("email").length() > 0)
-				{
-					mailAndName = h.get("email");
-				}
-				if(h.get("name").length() > 0)
-				{
-					mailAndName = mailAndName + ";" + h.get("name");
-				}
-				else
-				{
-					mailAndName = mailAndName + ";Assetmanager";
-				}
-				String identadresse1 = h.get("identadresse1");
-
-				// Sollt ein Vector of Hashes sein sonst überschreibt sich das immer
-
-				if(result.containsKey(mailAndName))
-				{
-					HashMap<String, HashMap<String, String>> entry = result.get(mailAndName);
-					entry.put(identadresse1, h);
-					result.put(mailAndName, entry);
-				}
-				else
-				{
-					HashMap<String, HashMap<String, String>> entry = new HashMap<String, HashMap<String, String>>();
-					entry.put(identadresse1, h);
-					result.put(mailAndName, entry);
-				}
-
-			}
-		}
-
-		return result;
-
+		
+		return convertedResult;
 	}
 
 	/**
@@ -10410,62 +10162,22 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private HashMap<String, Object> getMailverteilerFromAssetmanager(String name)
 	{
-		HashMap<String, Object> mailverteileradressen = new Hashtable<String, Object>();
-		HashMap<String, Object> args = new Hashtable<String, Object>();
-		ArgsHelper argsHelper = new ArgsHelper(args);
-		argsHelper.setMainTemplateType("ICRScrm.assetmanager");
-		argsHelper.setAdvancedFields(true);
-		argsHelper.addTemplateType("mailverteiler", "System.User");
-
-		argsHelper.addField("DOB.name");
-		argsHelper.addField("SLOTCOLLAPSE(mailverteiler_email) mailadressen");
-		argsHelper.addWhere("DOB.name='" + name + "'");
-
-		String mydom = (String)session.get("domainid");
-		if(mydom.length() == 0)
+		// Delegate to database service
+		if(databaseService == null)
 		{
-			argsHelper.addCondition("DOMAIN", "ALLDOMAINS");
+			databaseService = new Magic.IMS.ZLImport.ZinslistenDatabaseService(session, debug, DAInst, this);
 		}
-		else
+		
+		// Call service and convert Map to HashMap for backward compatibility
+		Map<String, Object> result = databaseService.getMailverteilerFromAssetmanager(name);
+		
+		HashMap<String, Object> convertedResult = new HashMap<>();
+		if(result != null)
 		{
-			argsHelper.addCondition("DOMAIN", mydom);
+			convertedResult.putAll(result);
 		}
-
-		// query result vector
-		ArrayList<HashMap<String, String>> res = null;
-		try
-		{
-			if(null == DAInst)
-			{
-				net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
-				DAInst = conn.getDataAgent();
-			}
-
-			QueryResult qr = DAInst.queryObjectWithResult(argsHelper.getArgs());
-			res = qr.getResult();
-		}
-		catch(Exception qe)
-		{
-			debug.error(this, "Exception querying objects.");
-			debug.error(qe);
-			set("var.result", "Interner Fehler:" + qe.getMessage());
-		}
-
-		if(res.size() > 0)
-		{
-			HashMap<String, String> h = res.get(0);
-
-			String mailadressen = "";
-
-			if(h.get("mailadressen").length() > 0)
-			{
-				mailadressen = h.get("mailadressen");
-			}
-
-			mailverteileradressen.put(mailadressen, "");
-
-		}
-		return mailverteileradressen;
+		
+		return convertedResult;
 	}
 
 	/**
@@ -12400,50 +12112,22 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private HashMap<String, String> getAllAssetmanagerAndIds(DynGenDataObj session2)
 	{
-		HashMap<String, String> assetmanagerAndIDs = new HashMap<>();
-
-		try
+		// Delegate to database service
+		if(databaseService == null)
 		{
-			ArrayList<HashMap<String, String>> res = new ArrayList<HashMap<String, String>>();
-
-			ArgsHelper argsHelper = new ArgsHelper();
-
-			argsHelper.setAdvancedFields(true);
-			argsHelper.setMainTemplateType("ICRScrm.assetmanager");
-			argsHelper.addDomainCondition(session);
-			argsHelper.addField("ID", "oid");
-			argsHelper.addField("DOB.name", "assetmanagername");
-
-			if(null == DAInst)
-			{
-				net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
-				DAInst = conn.getDataAgent();
-			}
-
-			QueryResult qr = DAInst.queryObjectWithResult(argsHelper.getArgs());
-			res = qr.getResult();
-
-			if(res != null && res.size() > 0)
-			{
-				StringBuilder resultLines = new StringBuilder();
-
-				for(int i = 0; i < res.size(); i++)
-				{
-					HashMap<String, String> row = res.get(i);
-
-					String oid = row.get("oid");
-					String assetmanagername = row.get("assetmanagername");
-
-					assetmanagerAndIDs.put(assetmanagername, oid);
-				}
-			}
+			databaseService = new Magic.IMS.ZLImport.ZinslistenDatabaseService(session, debug, DAInst, this);
 		}
-		catch(Exception e)
+		
+		// Call service and convert Map to HashMap for backward compatibility
+		Map<String, String> result = databaseService.getAllAssetmanagerAndIds();
+		
+		HashMap<String, String> convertedResult = new HashMap<>();
+		if(result != null)
 		{
-			BugMe.getInstance().log(e);
+			convertedResult.putAll(result);
 		}
-
-		return assetmanagerAndIDs;
+		
+		return convertedResult;
 	}
 
 	/**

@@ -231,18 +231,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	transient private Magic.IMS.ZLImport.ZLImportProtocol zlprotocol = null;
 
 	/** The zins zeilen cache with LRU eviction. */
-	transient private LinkedHashMap<String, Object> zinsZeilenCache = new LinkedHashMap<String, Object>(ZZ_CACHE_SIZE + 1, 0.75f, true) {
-		@Override
-		protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-			if(size() > ZZ_CACHE_SIZE) {
-				if(debug != null) {
-					debug.log("Evicting oldest entry from zinsZeilenCache: " + eldest.getKey());
-				}
-				return true;
-			}
-			return false;
-		}
-	};
+	transient private LinkedHashMap<String, Object> zinsZeilenCache = null;
 
 	/** The validation service. */
 	transient private ZinslistenValidationService validationService = null;
@@ -315,18 +304,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	protected String mylang = "";
 
 	/** The mapping cache with LRU eviction. */
-	transient protected LinkedHashMap<String, Object> mappingCache = new LinkedHashMap<String, Object>(MAPPING_CACHE_SIZE + 1, 0.75f, true) {
-		@Override
-		protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-			if(size() > MAPPING_CACHE_SIZE) {
-				if(debug != null) {
-					debug.log("Evicting oldest entry from mappingCache: " + eldest.getKey());
-				}
-				return true;
-			}
-			return false;
-		}
-	};
+	transient protected LinkedHashMap<String, Object> mappingCache = null;
 
 	/** wichtig um slots korrekt aufzuloesen! <b>Only for MSSQL at the moment</b>. */
 	protected transient String dbEncoding = null;
@@ -609,6 +587,20 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				return false;
 			}
 		};
+		
+		zinsZeilenCache = new LinkedHashMap<String, Object>(ZZ_CACHE_SIZE + 1, 0.75f, true) {
+			@Override
+			protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
+				if(size() > ZZ_CACHE_SIZE) {
+					if(debug != null) {
+						debug.log("Evicting oldest entry from zinsZeilenCache: " + eldest.getKey());
+					}
+					return true;
+				}
+				return false;
+			}
+		};
+		
 		setDBEncoding();
 		
 		// Initialize validation service
@@ -12836,55 +12828,73 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public void cleanup() {
 		try {
-			debug.log("UploadXLS5 cleanup started...");
+			if(debug != null) {
+				debug.log("UploadXLS5 cleanup started...");
+			}
 			
 			// Clear zinsZeilenCache
 			if(zinsZeilenCache != null) {
 				int size = zinsZeilenCache.size();
 				zinsZeilenCache.clear();
-				debug.log("Cleared zinsZeilenCache: " + size + " entries freed");
+				if(debug != null) {
+					debug.log("Cleared zinsZeilenCache: " + size + " entries freed");
+				}
 			}
 			
 			// Clear lastZZ4Top
 			if(lastZZ4Top != null) {
 				int size = lastZZ4Top.size();
 				lastZZ4Top.clear();
-				debug.log("Cleared lastZZ4Top: " + size + " entries freed");
+				if(debug != null) {
+					debug.log("Cleared lastZZ4Top: " + size + " entries freed");
+				}
 			}
 			
 			// Clear mappingCache
 			if(mappingCache != null) {
 				int size = mappingCache.size();
 				mappingCache.clear();
-				debug.log("Cleared mappingCache: " + size + " entries freed");
+				if(debug != null) {
+					debug.log("Cleared mappingCache: " + size + " entries freed");
+				}
 			}
 			
 			// Clear topsCache
 			if(topsCache != null) {
 				int size = topsCache.size();
 				topsCache.clear();
-				debug.log("Cleared topsCache: " + size + " entries freed");
+				if(debug != null) {
+					debug.log("Cleared topsCache: " + size + " entries freed");
+				}
 			}
 			
 			// Clear service caches
 			if(fileService != null) {
 				fileService.clearCache();
-				debug.log("Cleared fileService cache");
+				if(debug != null) {
+					debug.log("Cleared fileService cache");
+				}
 			}
 			
 			if(cacheService != null) {
 				cacheService.emptyTopCache();
 				cacheService.emptyLastZZ4Top();
-				debug.log("Cleared cacheService caches");
+				if(debug != null) {
+					debug.log("Cleared cacheService caches");
+				}
 			}
 			
 			// Clear transient content
 			cachedcontent = null;
 			
-			debug.log("UploadXLS5 cleanup completed successfully");
+			if(debug != null) {
+				debug.log("UploadXLS5 cleanup completed successfully");
+			}
 			
 		} catch(Exception e) {
-			debug.error("Error during UploadXLS5 cleanup", e);
+			if(debug != null) {
+				debug.error("Error during UploadXLS5 cleanup", e);
+			}
 			// Don't throw - cleanup should be best-effort
 		}
 	}

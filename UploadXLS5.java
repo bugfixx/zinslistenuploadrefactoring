@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
@@ -6308,11 +6309,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the wholetext
 	 * @return the hashtable
 	 */
-	private Hashtable<String, String> formatMailContent(Hashtable<String, String> mailinglist, Boolean wholetext)
+	public HashMap<String, String> formatMailContent(HashMap<String, String> mailinglist, Boolean wholetext)
 	{
-		Hashtable<String, String> mailinglistNew = new Hashtable<String, String>();
+		HashMap<String, String> mailinglistNew = new HashMap<>();
 
-		Enumeration keys = mailinglist.keys();
+		Enumeration<String> keys = new java.util.Vector<>(mailinglist.keySet()).elements();
 		while(keys.hasMoreElements())
 		{
 			String key = (String)keys.nextElement();

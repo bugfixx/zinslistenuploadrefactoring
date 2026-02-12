@@ -7863,14 +7863,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		List<Map<String, Object>> quellsystemList = null;
 		if(quellsystemResult != null && quellsystemResult.size() > 0)
 		{
-			quellsystemList = new ArrayList<>();
-			for(Object obj : quellsystemResult)
-			{
-				if(obj instanceof Map)
-				{
-					quellsystemList.add((Map<String, Object>)obj);
-				}
-			}
+			quellsystemList = convertToMapList(quellsystemResult);
 		}
 		
 		// Delegate to ZinslistenFileService
@@ -8110,6 +8103,32 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	public byte[] getCachedContent()
 	{
 		return getFileService().getCachedContent();
+	}
+
+	/**
+	 * Converts ArrayList<Object> to List<Map<String, Object>> for service calls.
+	 * Internal utility for service delegation with collection type conversions.
+	 *
+	 * @param arrayList the ArrayList to convert
+	 * @return the converted List, or null if input is null
+	 */
+	@SuppressWarnings("unchecked")
+	private List<Map<String, Object>> convertToMapList(ArrayList<Object> arrayList)
+	{
+		if(arrayList == null)
+		{
+			return null;
+		}
+		
+		List<Map<String, Object>> result = new ArrayList<>();
+		for(Object obj : arrayList)
+		{
+			if(obj instanceof Map)
+			{
+				result.add((Map<String, Object>)obj);
+			}
+		}
+		return result;
 	}
 
 	/**
@@ -9676,17 +9695,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private ArrayList<Object> readQuellsystemListe(ArrayList<Object> quellsystemResult, String quellsystem)
 	{
 		// Convert ArrayList<Object> to List<Map<String, Object>> for service call
-		List<Map<String, Object>> quellsystemList = new ArrayList<>();
-		if(quellsystemResult != null)
-		{
-			for(Object obj : quellsystemResult)
-			{
-				if(obj instanceof Map)
-				{
-					quellsystemList.add((Map<String, Object>)obj);
-				}
-			}
-		}
+		List<Map<String, Object>> quellsystemList = convertToMapList(quellsystemResult);
 		
 		// Delegate to ZinslistenFileService
 		List<Map<String, Object>> result = getFileService().readQuellsystemListe(quellsystemList, quellsystem);

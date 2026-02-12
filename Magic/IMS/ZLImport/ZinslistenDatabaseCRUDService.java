@@ -970,7 +970,7 @@ public class ZinslistenDatabaseCRUDService {
 			try
 			{
 				// CHECK ob die Topografie nicht ueberschrieben werden soll ????
-				boolean topoanpassung = this.getBoolean("var.topoanpassung", Boolean.TRUE);
+				boolean topoanpassung = parentObject.getBoolean("var.topoanpassung", Boolean.TRUE);
 				if(!topoanpassung)
 				{
 					return null;
@@ -1068,9 +1068,9 @@ public class ZinslistenDatabaseCRUDService {
 			}
 
 			// START JPI -- If Top has a rental start in the last 2 months and in the rent list it is a vacancy do not ovverride the top values
-			boolean vermietungtopuebeschreibtzinsliste = this.getBoolean("var.vermietungtopuebeschreibtzinsliste", Boolean.FALSE);
-			String vermietungtopuebeschreibtzinslistemonate = (String)this.get("var.vermietungtopuebeschreibtzinslistemonate");
-			String vermietungtopuebeschreibtzinslisteaction = (String)this.get("var.vermietungtopuebeschreibtzinslisteaction");
+			boolean vermietungtopuebeschreibtzinsliste = parentObject.getBoolean("var.vermietungtopuebeschreibtzinsliste", Boolean.FALSE);
+			String vermietungtopuebeschreibtzinslistemonate = (String)parentObject.get("var.vermietungtopuebeschreibtzinslistemonate");
+			String vermietungtopuebeschreibtzinslisteaction = (String)parentObject.get("var.vermietungtopuebeschreibtzinslisteaction");
 
 			String leerstehung = (String)ht.get("leerstehung");
 
@@ -1143,7 +1143,7 @@ public class ZinslistenDatabaseCRUDService {
 					if(mieterVorher == null || mieterVorher.length() == 0)
 					{
 						mieterVorher = mieterAktuell;
-						set("var.mieterold", mieterAktuell);
+						dgdTop.set("var.mieterold", mieterAktuell);
 					}
 					// Mieterwechsel
 					boolean mieterwechsel = false;
@@ -1468,9 +1468,9 @@ public class ZinslistenDatabaseCRUDService {
 
 				// START Vermietung ueberschreibt Top wenn aktiviert -- If Top has a rental start in the check period months and in the rent list it is a vacancy do not ovverride the top values
 
-				String vermietungtopuebeschreibtzinsliste = (String)this.get("var.vermietungtopuebeschreibtzinsliste");
-				String vermietungtopuebeschreibtzinslistemonate = (String)this.get("var.vermietungtopuebeschreibtzinslistemonate");
-				String vermietungtopuebeschreibtzinslisteaction = (String)this.get("var.vermietungtopuebeschreibtzinslisteaction");
+				String vermietungtopuebeschreibtzinsliste = (String)parentObject.get("var.vermietungtopuebeschreibtzinsliste");
+				String vermietungtopuebeschreibtzinslistemonate = (String)parentObject.get("var.vermietungtopuebeschreibtzinslistemonate");
+				String vermietungtopuebeschreibtzinslisteaction = (String)parentObject.get("var.vermietungtopuebeschreibtzinslisteaction");
 
 				Date mietbeginnDate = topdgd.getDate("var.mietvertragvon");
 				String leerstehung = (String)ht.get("leerstehung");
@@ -3149,7 +3149,7 @@ public class ZinslistenDatabaseCRUDService {
 			if(rsam2)
 			{
 				Boolean stellplatz = dgd.getBoolean("var.stellplatz", Boolean.FALSE);
-				Integer anzahl = getInteger("var.mieteinheitenanz", 1);
+				Integer anzahl = dgd.getInteger("var.mieteinheitenanz", 1);
 				Currency nfl = dgd.getCurrency("var.nfl");
 				if(nfl == null)
 				{
@@ -4354,6 +4354,10 @@ public class ZinslistenDatabaseCRUDService {
 	 * @param dgd
 	 *            dgd to write
 
+	 * @param ht
+	 *            Hashtable containing source values
+	 * @return Updated DynGenDataObj with written value
+	 */
 		private DynGenDataObj writeZZValue2DGD(String targetname, String sourcename, String default_on_empty_or_null, DynGenDataObj dgd, Hashtable ht)
 	{
 		String oldval = (String)dgd.get("var." + targetname);
@@ -5241,7 +5245,9 @@ public class ZinslistenDatabaseCRUDService {
 						{
 							// Wenn dieser parameter auf False, dann soll der Objektname nicht gesetzt werden
 							// mit Boolean.TRUE wird default TRUE für alle cfg gesetzt.
-							if(!CfgSingleton.getInstance().getBoolean("PM_UPDATE_HAUSADRESSE", Boolean.TRUE && !hausObj.getString("var.name").trim().equals("")))
+							boolean shouldUpdate = CfgSingleton.getInstance().getBoolean("PM_UPDATE_HAUSADRESSE", Boolean.TRUE);
+						boolean hasExistingName = !hausObj.getString("var.name").trim().equals("");
+						if(!shouldUpdate && hasExistingName)
 							{
 								// do nothing
 							}
@@ -5270,7 +5276,9 @@ public class ZinslistenDatabaseCRUDService {
 						{
 							// Wenn dieser parameter auf False, dann soll der Objektname nicht gesetzt werden
 							// mit Boolean.TRUE wird default TRUE für alle cfg gesetzt.
-							if(!CfgSingleton.getInstance().getBoolean("PM_UPDATE_HAUSADRESSE", Boolean.TRUE && !hausObj.getString("var.name").trim().equals("")))
+							boolean shouldUpdate = CfgSingleton.getInstance().getBoolean("PM_UPDATE_HAUSADRESSE", Boolean.TRUE);
+						boolean hasExistingName = !hausObj.getString("var.name").trim().equals("");
+						if(!shouldUpdate && hasExistingName)
 							{
 								// do nothing
 							}
@@ -5681,7 +5689,7 @@ public class ZinslistenDatabaseCRUDService {
 									(String)currentSlot.get(i)}, -1);
 							}
 						}
-						boolean clearvaluesslot = this.getBoolean("var.clearvalues" + name, Boolean.FALSE);
+						boolean clearvaluesslot = parentObject.getBoolean("var.clearvalues" + name, Boolean.FALSE);
 
 						// bei clearvalues immer loeschen, wenn nicht leer
 						if(clearvaluesslot && !oldSlot.isEmpty())
@@ -5846,11 +5854,11 @@ public class ZinslistenDatabaseCRUDService {
 
 											if(vals.containsKey("mieterfirma___uniqueid"))
 											{
-												slot_els.put(vals.get("mieterfirma___uniqueid"), id);
+												slot_els.put(vals.get("mieterfirma___uniqueid"), r);
 											}
 											else if(vals.containsKey("mieterfirma___externalid"))
 											{
-												slot_els.put(vals.get("mieterfirma___externalid"), id);
+												slot_els.put(vals.get("mieterfirma___externalid"), r);
 											}
 
 										}

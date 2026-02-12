@@ -125,7 +125,7 @@ public class ZinslistenValidationService
 
 		// Check Assetmanager, Gesellschaft, Geschäftsfeld
 		String hv = zlnew.getTyp();
-		if(!status.equals("9") && !hv.equals("egiriskmieter"))
+		if(hausObj != null && !status.equals("9") && !hv.equals("egiriskmieter"))
 		{
 			if(0 == hausObj.getSlotsize("slot.assetmanager"))
 			{
@@ -142,7 +142,7 @@ public class ZinslistenValidationService
 				}
 			}
 		}
-		if(0 == hausObj.getSlotsize("slot.gschaft"))
+		if(hausObj != null && 0 == hausObj.getSlotsize("slot.gschaft"))
 		{
 			if(zlTypeConfig != null && !zlTypeConfig.isIgnorekeingschaft())
 			{
@@ -177,7 +177,7 @@ public class ZinslistenValidationService
 			}
 			if(olderrs.length() > 0)
 			{
-				errs = new String(olderrs + "\n" + errs);
+				errs = olderrs + "\n" + errs;
 			}
 			hdgd.set("var.ignoreerrors", errs);
 			DAInst.storeObject(hdgd, "CIMS.haus", hausid, session);

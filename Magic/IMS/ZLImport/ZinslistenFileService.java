@@ -395,12 +395,12 @@ public class ZinslistenFileService
 				byte[] content = null;
 				if(file.equals(cachedFile) && null != cachedContent)
 				{
-					System.err.println("ZLU2: FILECONTENT CACHED!");
+					debug.log("ZLU2: FILECONTENT CACHED!");
 					content = cachedContent;
 				}
 				else
 				{
-					System.err.println("ZLU2: READING FILE:" + file);
+					debug.log("ZLU2: READING FILE:" + file);
 					content = fileDataAgent.getObject(file);
 					cachedContent = content;
 					cachedFile = file;
@@ -421,7 +421,7 @@ public class ZinslistenFileService
 					zinslistenImport.extractDateFromFilename(thefilename);
 
 					zl = zinslistenImport.read(bis, thefilename, ftype, index);
-					System.err.println("Zinsliste gelesen" + zl.getInfoText());
+					debug.log("Zinsliste gelesen" + zl.getInfoText());
 				}
 				catch(Exception e)
 				{

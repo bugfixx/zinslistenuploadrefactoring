@@ -430,10 +430,8 @@ public class ZinslistenMailService
 
 				mailinglist = parent.formatMailContent(mailinglist, Boolean.TRUE);
 
-				Enumeration<String> keys = new java.util.Vector<>(mailinglist.keySet()).elements();
-				while(keys.hasMoreElements())
+				for(String mailadress : mailinglist.keySet())
 				{
-					String mailadress = keys.nextElement();
 					value = mailinglist.get(mailadress);
 					value = CoolTemplateTool.removeEssenceID(value);
 					break;
@@ -515,10 +513,8 @@ public class ZinslistenMailService
 		}
 
 		// PKO - REMOVE - Only testing purpose
-		Enumeration<String> mykeys = new java.util.Vector<>(mailinglist.keySet()).elements();
-		while(mykeys.hasMoreElements())
+		for(String mailadress : mailinglist.keySet())
 		{
-			String mailadress = mykeys.nextElement();
 			System.out.println("AM MAILS AN FOLGENDE ADRESSEN (sendMailToAssetmanager): " + mailadress);
 			BugMe.getInstance("maillogfile").log("RRIMPORT> [" + parent.getName() + "] preparing rr mail to " + mailadress);
 
@@ -594,14 +590,11 @@ public class ZinslistenMailService
 		// Send Assetmanager Mails
 		if(mailinglist != null && mailinglist.size() > 0)
 		{
-			Enumeration<String> keys = new java.util.Vector<>(mailinglist.keySet()).elements();
-			while(keys.hasMoreElements())
+			for(String mailadress : mailinglist.keySet())
 			{
 				ArrayList<String> to_addresses = new ArrayList<>();
 				ArrayList<String> cc_addresses = new ArrayList<>();
 				ArrayList<String> bcc_addresses = new ArrayList<>();
-
-				String mailadress = keys.nextElement();
 
 				String value = mailinglist.get(mailadress);
 

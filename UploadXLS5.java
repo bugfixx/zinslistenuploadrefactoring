@@ -6313,10 +6313,8 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	{
 		HashMap<String, String> mailinglistNew = new HashMap<>();
 
-		Enumeration<String> keys = new java.util.Vector<>(mailinglist.keySet()).elements();
-		while(keys.hasMoreElements())
+		for(String key : mailinglist.keySet())
 		{
-			String key = (String)keys.nextElement();
 			String value = mailinglist.get(key);
 
 			String[] valueSplitt = value.split("<br>");

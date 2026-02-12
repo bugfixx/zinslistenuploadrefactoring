@@ -28,12 +28,15 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -198,7 +201,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	transient private Magic.IMS.ZLImport.ZLImportProtocol zlprotocol = null;
 
 	/** The zins zeilen cache. */
-	transient private Hashtable zinsZeilenCache = null;
+	transient private Map<String, Object> zinsZeilenCache = null;
 
 	/** The csv str. */
 	private String csvStr = "";
@@ -211,9 +214,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private int createzz = 0;
 
 	/** The tops cache. */
-	transient Hashtable topsCache = null;
+	transient Map<String, Object> topsCache = null;
 	/** contains the date of the last CIMS.zinszeile for each top */
-	transient Hashtable<String, Calendar> lastZZ4Top = null;
+	transient Map<String, Calendar> lastZZ4Top = null;
 
 	/** The global. */
 	public DynGenDataObj global = null;
@@ -238,13 +241,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private int resultSizeOfStoredObjects = 0;
 
 	/** The mapper. */
-	transient Hashtable mapper = null;
+	transient Map<String, Object> mapper = null;
 
 	/** The mylang. */
 	protected String mylang = "";
 
 	/** The mapping cache. */
-	transient protected Hashtable mappingCache = null;
+	transient protected Map<String, Object> mappingCache = null;
 
 	/** wichtig um slots korrekt aufzuloesen! <b>Only for MSSQL at the moment</b>. */
 	protected transient String dbEncoding = null;
@@ -254,26 +257,26 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 	/** The result. */
 	// this contains the import result for SAP Loadsequence import
-	private final Hashtable<String, String> result = new Hashtable<String, String>();
+	private final Map<String, String> result = new HashMap<String, String>();
 
 	/** The mailinglist. */
-	private Hashtable<String, String> mailinglist = new Hashtable<String, String>();
+	private Map<String, String> mailinglist = new HashMap<String, String>();
 
 	/** The leerstandmailinglist. */
-	private Hashtable<String, String> leerstandmailinglist = new Hashtable<String, String>();
+	private Map<String, String> leerstandmailinglist = new HashMap<String, String>();
 
 	/** The ablaufendevertraegemailinglist. */
-	private Hashtable<String, String> ablaufendevertraegemailinglist = new Hashtable<String, String>();
+	private Map<String, String> ablaufendevertraegemailinglist = new HashMap<String, String>();
 
 	/** The mailinglist kennwerte nach nutzung. */
-	private final Hashtable<String, String> mailinglistKennwerteNachNutzung = new Hashtable<String, String>();
+	private final Map<String, String> mailinglistKennwerteNachNutzung = new HashMap<String, String>();
 
 	/** The assetmanager and I ds. */
-	private Hashtable<String, String> assetmanagerAndIDs = new Hashtable<String, String>();
+	private Map<String, String> assetmanagerAndIDs = new HashMap<String, String>();
 
 	/** The top status values. */
 	// Values from TopStatusSelector.tpl
-	Hashtable topStatusValues = new Hashtable();
+	Map<String, Object> topStatusValues = new HashMap<String, Object>();
 
 	/** The statusformissingunit split. */
 	String[] statusformissingunitSplit = null;
@@ -294,7 +297,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private static Pattern FILE_NAME_PATTERN = Pattern.compile("(.*)FRED(\\d*).(csv|xlsx)");
 
 	/** The zl upload object ids. */
-	private Vector zlUploadObjectIds = new Vector();
+	private List<String> zlUploadObjectIds = new ArrayList<String>();
 
 	/** German Locale for Digits. */
 	private DecimalFormatSymbols symbolsDE_DE = DecimalFormatSymbols.getInstance(Locale.GERMANY);
@@ -315,7 +318,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private static String verzeichnis = "";
 
 	/** Fileparameter. */
-	Hashtable myfparams = null;
+	Map<String, Object> myfparams = null;
 
 	/** The errorsformailinglist. */
 	private StringBuffer errorsformailinglist = new StringBuffer();
@@ -335,7 +338,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		super();
 		if(null == topsCache)
 		{
-			topsCache = new Hashtable();
+			topsCache = new HashMap<String, Object>();
 		}
 
 		this.dao = new FredDAO();
@@ -370,7 +373,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	public UploadXLS5(GenDataClass gdc, GenDataClass gl, GenDataClass se)
 	{
 		super(gdc);
-		mapper = new Hashtable();
+		mapper = new HashMap<String, Object>();
 		global = (DynGenDataObj)gl;
 		session = (DynGenDataObj)se;
 		this.dao = new FredDAO();
@@ -393,7 +396,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			mylang = session.getString("language");
 		}
 
-		mappingCache = new Hashtable();
+		mappingCache = new HashMap<String, Object>();
 		setDBEncoding();
 	}
 

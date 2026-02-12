@@ -1,120 +1,647 @@
 package Magic.IMS.ZLImport;
 
-import java.util.Hashtable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
+import net.metamagix.essence.Agents.Connector;
+import net.metamagix.essence.Agents.QueryResult;
 import net.metamagix.essence.Bugs.BugMe;
 import net.metamagix.essence.TePar.DynGenDataObj;
-import net.metamagix.essence.GenData.Slot;
-import net.metamagix.essence.Agents.Connector;
+import net.metamagix.essence.tools.Translation.Tr;
 
-import Magic.IMS.Zinsliste;
-import Magic.IMS.TopList;
+import Magic.IMS.reporting.helpers.ArgsHelper;
 
 /**
  * Service class for database operations in the Zinslisten import process.
  * 
- * This service handles all database CRUD operations for Haus, Top, Stellplatz,
+ * This service handles database query operations for Haus, Top, Stellplatz,
  * Zinszeile, and related objects during the Zinslisten import.
  * 
- * Extracted from UploadXLS5.java for better separation of concerns.
+ * Phase 2: Simple query methods extracted:
+ * - getZZOID(String topOid, String jahr, String monat) - Gets Zinszeile OID
+ * - getZinsZeilen(String[] topoids, String jahr, String monat) - Gets all rent rolls
+ * - getZinsZeilenForName(String[] topoids, String jahr, String monat) - Gets rent rolls indexed by name
+ * - getAssetmanagerMailadressFromObject(String hausid) - Retrieves asset manager email
+ * - getAlleWEsInBestand() - Gets all units in inventory
+ * - getMailverteilerFromAssetmanager(String name) - Retrieves mailing distribution
+ * - getAllAssetmanagerAndIds() - Builds map of asset managers and IDs
  * 
- * Methods included in this service:
+ * Collections modernization:
+ * - Vector → ArrayList
+ * - Hashtable → HashMap
+ * - Added proper generics throughout
  * 
- * Haus Operations:
- * - createHaus(Zinsliste zl) - Creates a new Haus object
- * - updateHaus(Zinsliste zl, String oid) - Updates an existing Haus
- * - updateHausName(String hausName, String hausOid, Zinsliste zl) - Updates Haus name/address
- * 
- * Top/Stellplatz Operations:
- * - createTop(Hashtable ht, String oid_haus, Zinsliste zl) - Creates a Top
- * - createStellplatz(Hashtable ht, String oid_haus, Zinsliste zl) - Creates a Stellplatz
- * - createTopOrStellplatz(Hashtable ht, String oid_haus, boolean is_a_top, Zinsliste zl) - Generic creation
- * - updateTopOrStellplatz(String oid_top, Hashtable ht, Zinsliste zl, boolean is_a_top, CoolBulkStoreTool mycbst) - Updates Top/Stellplatz
- * 
- * Zinszeile Operations:
- * - createZZ(Hashtable ht, Zinsliste zl, String oid_top, String zz_oid) - Creates/updates Zinszeile
- * - getZZOID(String oid_top, String jahr, String monat) - Gets Zinszeile OID
- * - deleteZinsZeilen(String[] topoids, String jahr, String monat) - Deletes Zinszeilen
- * - getZinsZeilenForName(String[] topoids, String jahr, String monat) - Queries Zinszeilen
- * 
- * Relationship Operations:
- * - addTopToHaus(String oid_top, String oid_haus) - Links a Top to Haus
- * - addTopsToHaus(Hashtable oids, String oid_haus) - Links multiple Tops to Haus
- * - addTopsToGebaeude(Hashtable topszugebaeuden) - Links Tops to Gebaeude
- * 
- * Bulk Operations:
- * - storeObjectsJunked(Hashtable res, DynGenDataObj ses) - Bulk stores objects in chunks
- * - junkStore(Hashtable newtops, String oid_haus) - Stores and links Tops to Haus
- * 
- * Data Writing:
- * - writeCommonValues(DynGenDataObj topdgd, DynGenDataObj zzdgd, Zinsliste zl) - Copies values from Top to ZZ
- * - writeCommonValues(Hashtable ht, DynGenDataObj dgd, Zinsliste zl) - Writes values from hashtable to object
- * - writeSlots(Hashtable vals, DynGenDataObj dgd) - Writes slot values
- * - writeSlots(Hashtable vals, DynGenDataObj dgd, boolean setOnlySingleValue, boolean createObject) - Advanced slot writing
- * 
- * Note: These methods have complex dependencies on UploadXLS5 state including:
- * - DAInst (DataAgent) - inherited from DynGenDataObj parent
- * - PBInst (PageBuilder) - inherited from DynGenDataObj parent  
- * - session, global objects
- * - get() method from parent for retrieving configuration
- * - userland, flavour, and other instance fields
- * - zlprotocol for logging
- * - Various helper methods and utilities
- * 
- * Full extraction requires significant refactoring to:
- * 1. Pass all dependencies explicitly via constructor or method parameters
- * 2. Extract helper methods that are tightly coupled
- * 3. Restructure the parent class to reduce coupling
- * 4. Consider using a context object to pass shared state
- * 
- * Current Status:
- * This class serves as architectural documentation for the intended refactoring.
- * The actual methods remain in UploadXLS5.java due to deep coupling with:
- * - Parent class state and methods (get(), set(), getBoolean(), etc.)
- * - Inherited fields from DynGenDataObj (DAInst, PBInst, id, etc.)
- * - Complex interaction patterns with other UploadXLS5 methods
- * 
- * Recommended Approach for Full Extraction:
- * 1. Create a ZinslistenContext class to hold shared state
- * 2. Extract helper methods to utility classes
- * 3. Use dependency injection for DAInst, PBInst
- * 4. Refactor UploadXLS5 to delegate to this service
- * 5. Progressively move methods while maintaining backward compatibility
+ * Note: Complex CRUD operations (createHaus, createTop, createZZ, etc.) will be extracted in Phase 3.
  */
 public class ZinslistenDatabaseService
 {
 	private final DynGenDataObj session;
-	private final DynGenDataObj global;
 	private final BugMe debug;
-	private net.metamagix.essence.Agents.DataAgent DAInst;
+	private net.metamagix.essence.Agents.DataAgent dataAgent;
+	private final DynGenDataObj parentObject;
+	private Map<String, Object> zinsZeilenCache;
 
 	/**
 	 * Constructor for ZinslistenDatabaseService.
 	 * 
 	 * @param session the user session
-	 * @param global the global object
 	 * @param debug the debug logger
-	 * @param DAInst the Data Agent instance
+	 * @param dataAgent the Data Agent instance
+	 * @param parentObject the parent UploadXLS5 object for accessing set() method and cache
 	 */
-	public ZinslistenDatabaseService(DynGenDataObj session, DynGenDataObj global, BugMe debug, 
-	                                  net.metamagix.essence.Agents.DataAgent DAInst)
+	public ZinslistenDatabaseService(DynGenDataObj session, BugMe debug, 
+	                                  net.metamagix.essence.Agents.DataAgent dataAgent,
+	                                  DynGenDataObj parentObject)
 	{
 		this.session = session;
-		this.global = global;
 		this.debug = debug;
-		this.DAInst = DAInst;
+		this.dataAgent = dataAgent;
+		this.parentObject = parentObject;
 	}
 
-	// NOTE: Methods are documented above but not extracted here due to complex dependencies
-	// The extraction requires a larger refactoring effort to properly decouple from UploadXLS5
-	// 
-	// For now, this class serves as:
-	// 1. Documentation of the intended service boundary
-	// 2. Architecture guideline for future refactoring
-	// 3. Clear specification of which methods belong to database concerns
-	// 
-	// To use this service in the future:
-	// 1. Instantiate it with required dependencies
-	// 2. Call methods to perform database operations
-	// 3. Keep UploadXLS5 thin by delegating to this service
+	/**
+	 * Gets the OID of a Zinszeile for a specific Top, year, and month.
+	 * 
+	 * @param topOid the Top OID
+	 * @param jahr the year
+	 * @param monat the month
+	 * @return the Zinszeile OID, or null if not found
+	 */
+	public String getZZOID(String topOid, String jahr, String monat)
+	{
+		Map<String, Object> args = new HashMap<>();
+		List<Map<String, String>> res = new ArrayList<>();
+		args.put("TType", "CIMS.zinszeile");
+		args.put("fieldClause", "ID,name");
+		args.put("top_ID", topOid);
+		args.put("jahr", jahr);
+		args.put("monat", monat);
+
+		String mydom = (String)session.get("domainid");
+		if(mydom.length() == 0)
+		{
+			args.put("DOMAIN", "ALLDOMAINS");
+		}
+		else
+		{
+			args.put("DOMAIN", mydom);
+		}
+		
+		if(null == dataAgent)
+		{
+			Connector conn = new Connector();
+			dataAgent = conn.getDataAgent();
+		}
+
+		try
+		{
+			// Convert to Hashtable for compatibility with queryObject
+			java.util.Hashtable<String, Object> htArgs = new java.util.Hashtable<>();
+			htArgs.putAll(args);
+			java.util.Vector<java.util.Hashtable<String, String>> vecRes = dataAgent.queryObject(htArgs);
+			
+			// Convert result to List<Map>
+			for(java.util.Hashtable<String, String> ht : vecRes)
+			{
+				Map<String, String> map = new HashMap<>();
+				map.putAll(ht);
+				res.add(map);
+			}
+		}
+		catch(Exception x)
+		{
+			// Silent catch as in original
+		}
+		
+		if(res.size() > 0)
+		{
+			Map<String, String> h = res.get(0);
+			if(h != null)
+			{
+				return h.get("ID");
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Gets Zinszeilen for specific Tops, year, and month.
+	 * 
+	 * @param topoids array of Top OIDs
+	 * @param jahr the year
+	 * @param monat the month
+	 * @return Map of Top OID to Zinszeile data
+	 */
+	public Map<String, Map<String, String>> getZinsZeilen(String[] topoids, String jahr, String monat)
+	{
+		if(null == topoids || topoids.length == 0)
+		{
+			log("Abfrage nach Zinszeilen ohne angegebene Tops.");
+			return new HashMap<>();
+		}
+
+		zinsZeilenCache = new HashMap<>();
+		
+		if(null != monat && monat.startsWith("0"))
+		{
+			if(monat.length() == 2)
+			{
+				monat = monat.substring(1, 2);
+			}
+		}
+		else if(null == monat)
+		{
+			monat = "";
+		}
+
+		Map<String, Object> args = new HashMap<>();
+		List<Map<String, String>> res = new ArrayList<>();
+		args.put("TType", "CIMS.zinszeile");
+		args.put("fieldClause", "DOB.ID zzid,mieter,nutzung,nfl,leerfl,hauptmietzins,betriebskosten ,reparaturfond,name,DDT1.ID topid");
+		args.put("top_ID", topoids);
+		args.put("jahr", jahr);
+		args.put("monat", monat);
+
+		String mydom = (String)session.get("domainid");
+		if(mydom.length() == 0)
+		{
+			args.put("DOMAIN", "ALLDOMAINS");
+		}
+		else
+		{
+			args.put("DOMAIN", mydom);
+		}
+		
+		if(null == dataAgent)
+		{
+			Connector conn = new Connector();
+			dataAgent = conn.getDataAgent();
+		}
+
+		try
+		{
+			// Convert to Hashtable for compatibility
+			java.util.Hashtable<String, Object> htArgs = new java.util.Hashtable<>();
+			htArgs.putAll(args);
+			java.util.Vector<java.util.Hashtable<String, String>> vecRes = dataAgent.queryObject(htArgs);
+			
+			// Convert to List<Map>
+			for(java.util.Hashtable<String, String> ht : vecRes)
+			{
+				Map<String, String> map = new HashMap<>();
+				map.putAll(ht);
+				res.add(map);
+			}
+		}
+		catch(Exception x)
+		{
+			debug.log(x);
+			debug.error(x);
+		}
+
+		Map<String, Map<String, String>> top2zz = new HashMap<>();
+		
+		for(Map<String, String> h : res)
+		{
+			if(h != null)
+			{
+				String topid = h.get("topid");
+				String zzid = h.get("zzid");
+				if(null != topid)
+				{
+					if(null != zzid)
+					{
+						top2zz.put(topid, h);
+						zinsZeilenCache.put(zzid, "");
+					}
+				}
+			}
+		}
+		
+		// Fill cache
+		if(zinsZeilenCache != null && zinsZeilenCache.size() > 0)
+		{
+			try
+			{
+				// Convert to Hashtable for compatibility
+				java.util.Hashtable<String, Object> htCache = new java.util.Hashtable<>();
+				htCache.putAll(zinsZeilenCache);
+				htCache = dataAgent.getObjects(htCache, "");
+				
+				// Convert back to Map
+				zinsZeilenCache.clear();
+				zinsZeilenCache.putAll(htCache);
+				
+				// Update parent cache
+				parentObject.set("zinsZeilenCache", htCache);
+			}
+			catch(Exception xx)
+			{
+				debug.log(xx);
+			}
+		}
+		return top2zz;
+	}
+
+	/**
+	 * Gets Zinszeilen indexed by Top name.
+	 * 
+	 * @param topoids array of Top OIDs
+	 * @param jahr the year
+	 * @param monat the month
+	 * @return Map of Top name to Zinszeile data
+	 */
+	public Map<String, Object> getZinsZeilenForName(String[] topoids, String jahr, String monat)
+	{
+		if(null == topoids || topoids.length == 0)
+		{
+			log("Abfrage nach Zinszeilen ohne angegebene Tops.");
+			return new HashMap<>();
+		}
+
+		Map<String, Object> args = new HashMap<>();
+		List<Map<String, String>> res = new ArrayList<>();
+		args.put("TType", "CIMS.zinszeile");
+		args.put("fieldClause", "DOB.ID zzid,mieter,nutzung,nfl,leerfl,hauptmietzins,betriebskosten ,reparaturfond,name,DDT1.ID topid,DDT1.name topname");
+		args.put("top_ID", topoids);
+		args.put("jahr", jahr);
+		args.put("monat", monat);
+
+		String mydom = (String)session.get("domainid");
+		if(mydom.length() == 0)
+		{
+			args.put("DOMAIN", "ALLDOMAINS");
+		}
+		else
+		{
+			args.put("DOMAIN", mydom);
+		}
+		
+		if(null == dataAgent)
+		{
+			Connector conn = new Connector();
+			dataAgent = conn.getDataAgent();
+		}
+
+		try
+		{
+			// Convert to Hashtable for compatibility
+			java.util.Hashtable<String, Object> htArgs = new java.util.Hashtable<>();
+			htArgs.putAll(args);
+			java.util.Vector<java.util.Hashtable<String, String>> vecRes = dataAgent.queryObject(htArgs);
+			
+			// Convert to List<Map>
+			for(java.util.Hashtable<String, String> ht : vecRes)
+			{
+				Map<String, String> map = new HashMap<>();
+				map.putAll(ht);
+				res.add(map);
+			}
+		}
+		catch(Exception x)
+		{
+			debug.log(x);
+			debug.error(x);
+		}
+
+		Map<String, Object> top2zz = new HashMap<>();
+		
+		for(Map<String, String> h : res)
+		{
+			if(h != null)
+			{
+				String topname = h.get("topname");
+				String zzid = h.get("zzid");
+				if(null != topname)
+				{
+					if(null != zzid)
+					{
+						top2zz.put(topname, h);
+					}
+				}
+			}
+		}
+		return top2zz;
+	}
+
+	/**
+	 * Retrieves asset manager email address from a Haus object.
+	 * 
+	 * @param hausid the Haus OID
+	 * @return email and name string in format "email;name", or empty string if not found
+	 */
+	public String getAssetmanagerMailadressFromObject(String hausid)
+	{
+		Map<String, Object> args = new HashMap<>();
+		ArgsHelper argsHelper = new ArgsHelper(args);
+		argsHelper.setMainTemplateType("CIMS.haus");
+		argsHelper.setAdvancedFields(true);
+		argsHelper.addTemplateType("assetmanager", "ICRScrm.assetmanager");
+
+		argsHelper.addField("assetmanager_name");
+		argsHelper.addField("assetmanager_email");
+		argsHelper.addWhere("DOB.ID =" + hausid);
+
+		String mydom = (String)session.get("domainid");
+		if(mydom.length() == 0)
+		{
+			argsHelper.addCondition("DOMAIN", "ALLDOMAINS");
+		}
+		else
+		{
+			argsHelper.addCondition("DOMAIN", mydom);
+		}
+
+		List<Map<String, String>> res = null;
+		try
+		{
+			if(null == dataAgent)
+			{
+				Connector conn = new Connector();
+				dataAgent = conn.getDataAgent();
+			}
+
+			QueryResult qr = dataAgent.queryObjectWithResult(argsHelper.getArgs());
+			// Convert Vector to List
+			java.util.Vector<java.util.Hashtable<String, String>> vecRes = qr.getResult();
+			res = new ArrayList<>();
+			for(java.util.Hashtable<String, String> ht : vecRes)
+			{
+				Map<String, String> map = new HashMap<>();
+				map.putAll(ht);
+				res.add(map);
+			}
+		}
+		catch(Exception qe)
+		{
+			debug.error(this, "Exception querying objects.");
+			debug.error(qe);
+			parentObject.set("var.result", "Interner Fehler:" + qe.getMessage());
+		}
+
+		if(res.size() > 0)
+		{
+			Map<String, String> h = res.get(0);
+
+			String mailAndName = "";
+
+			if(h.get("email").length() > 0)
+			{
+				mailAndName = h.get("email");
+			}
+			if(h.get("name").length() > 0)
+			{
+				mailAndName = mailAndName + ";" + h.get("name");
+			}
+			else
+			{
+				mailAndName = mailAndName + ";Assetmanager";
+			}
+
+			return mailAndName;
+		}
+		else
+		{
+			return "";
+		}
+	}
+
+	/**
+	 * Gets all properties (WE) in inventory.
+	 * 
+	 * @return Map of asset manager email/name to property data
+	 */
+	public Map<String, Object> getAlleWEsInBestand()
+	{
+		Map<String, Map<String, Map<String, String>>> result = new HashMap<>();
+
+		Map<String, Object> args = new HashMap<>();
+		ArgsHelper argsHelper = new ArgsHelper(args);
+		argsHelper.setMainTemplateType("CIMS.haus");
+		argsHelper.setAdvancedFields(true);
+		argsHelper.addTemplateType("assetmanager", "ICRScrm.assetmanager");
+
+		argsHelper.addField("ET0.identadresse1");
+		argsHelper.addField("ET0.identadresse5");
+		argsHelper.addField("ET0.plz");
+		argsHelper.addField("DOB.name", "wename");
+		argsHelper.addField("assetmanager_name");
+		argsHelper.addField("assetmanager_email");
+
+		argsHelper.addWhere("ET0.status>=0 and (ET0.verkaufsdatum is null or ET0.verkaufsdatum='' )");
+
+		String mydom = (String)session.get("domainid");
+		if(mydom.length() == 0)
+		{
+			argsHelper.addCondition("DOMAIN", "ALLDOMAINS");
+		}
+		else
+		{
+			argsHelper.addCondition("DOMAIN", mydom);
+		}
+
+		List<Map<String, String>> res = null;
+		try
+		{
+			if(null == dataAgent)
+			{
+				Connector conn = new Connector();
+				dataAgent = conn.getDataAgent();
+			}
+
+			QueryResult qr = dataAgent.queryObjectWithResult(argsHelper.getArgs());
+			// Convert Vector to List
+			java.util.Vector<java.util.Hashtable<String, String>> vecRes = qr.getResult();
+			res = new ArrayList<>();
+			for(java.util.Hashtable<String, String> ht : vecRes)
+			{
+				Map<String, String> map = new HashMap<>();
+				map.putAll(ht);
+				res.add(map);
+			}
+		}
+		catch(Exception qe)
+		{
+			debug.error(this, "Exception querying objects.");
+			debug.error(qe);
+			parentObject.set("var.result", "Interner Fehler:" + qe.getMessage());
+		}
+
+		if(res.size() > 0)
+		{
+			for(Map<String, String> h : res)
+			{
+				String mailAndName = "";
+
+				if(h.get("email").length() > 0)
+				{
+					mailAndName = h.get("email");
+				}
+				if(h.get("name").length() > 0)
+				{
+					mailAndName = mailAndName + ";" + h.get("name");
+				}
+				else
+				{
+					mailAndName = mailAndName + ";Assetmanager";
+				}
+				String identadresse1 = h.get("identadresse1");
+
+				if(result.containsKey(mailAndName))
+				{
+					Map<String, Map<String, String>> entry = result.get(mailAndName);
+					entry.put(identadresse1, h);
+					result.put(mailAndName, entry);
+				}
+				else
+				{
+					Map<String, Map<String, String>> entry = new HashMap<>();
+					entry.put(identadresse1, h);
+					result.put(mailAndName, entry);
+				}
+			}
+		}
+
+		return new HashMap<>(result);
+	}
+
+	/**
+	 * Gets mailing distribution list from an asset manager.
+	 * 
+	 * @param name the asset manager name
+	 * @return Map containing mailing addresses
+	 */
+	public Map<String, Object> getMailverteilerFromAssetmanager(String name)
+	{
+		Map<String, Object> mailverteileradressen = new HashMap<>();
+		Map<String, Object> args = new HashMap<>();
+		ArgsHelper argsHelper = new ArgsHelper(args);
+		argsHelper.setMainTemplateType("ICRScrm.assetmanager");
+		argsHelper.setAdvancedFields(true);
+		argsHelper.addTemplateType("mailverteiler", "System.User");
+
+		argsHelper.addField("DOB.name");
+		argsHelper.addField("SLOTCOLLAPSE(mailverteiler_email) mailadressen");
+		argsHelper.addWhere("DOB.name='" + name + "'");
+
+		String mydom = (String)session.get("domainid");
+		if(mydom.length() == 0)
+		{
+			argsHelper.addCondition("DOMAIN", "ALLDOMAINS");
+		}
+		else
+		{
+			argsHelper.addCondition("DOMAIN", mydom);
+		}
+
+		List<Map<String, String>> res = null;
+		try
+		{
+			if(null == dataAgent)
+			{
+				Connector conn = new Connector();
+				dataAgent = conn.getDataAgent();
+			}
+
+			QueryResult qr = dataAgent.queryObjectWithResult(argsHelper.getArgs());
+			// Convert Vector to List
+			java.util.Vector<java.util.Hashtable<String, String>> vecRes = qr.getResult();
+			res = new ArrayList<>();
+			for(java.util.Hashtable<String, String> ht : vecRes)
+			{
+				Map<String, String> map = new HashMap<>();
+				map.putAll(ht);
+				res.add(map);
+			}
+		}
+		catch(Exception qe)
+		{
+			debug.error(this, "Exception querying objects.");
+			debug.error(qe);
+			parentObject.set("var.result", "Interner Fehler:" + qe.getMessage());
+		}
+
+		if(res.size() > 0)
+		{
+			Map<String, String> h = res.get(0);
+
+			String mailadressen = "";
+
+			if(h.get("mailadressen").length() > 0)
+			{
+				mailadressen = h.get("mailadressen");
+			}
+
+			mailverteileradressen.put(mailadressen, "");
+		}
+		return mailverteileradressen;
+	}
+
+	/**
+	 * Gets all asset managers and their IDs.
+	 * 
+	 * @return Map of asset manager name to OID
+	 */
+	public Map<String, String> getAllAssetmanagerAndIds()
+	{
+		Map<String, String> assetmanagerAndIDs = new HashMap<>();
+
+		try
+		{
+			List<Map<String, String>> res = new ArrayList<>();
+
+			ArgsHelper argsHelper = new ArgsHelper();
+
+			argsHelper.setAdvancedFields(true);
+			argsHelper.setMainTemplateType("ICRScrm.assetmanager");
+			argsHelper.addDomainCondition(session);
+			argsHelper.addField("ID", "oid");
+			argsHelper.addField("DOB.name", "assetmanagername");
+
+			if(null == dataAgent)
+			{
+				Connector conn = new Connector();
+				dataAgent = conn.getDataAgent();
+			}
+
+			QueryResult qr = dataAgent.queryObjectWithResult(argsHelper.getArgs());
+			// Convert Vector to List
+			java.util.Vector<java.util.Hashtable<String, String>> vecRes = qr.getResult();
+			for(java.util.Hashtable<String, String> ht : vecRes)
+			{
+				Map<String, String> map = new HashMap<>();
+				map.putAll(ht);
+				res.add(map);
+			}
+
+			if(res != null && res.size() > 0)
+			{
+				for(Map<String, String> row : res)
+				{
+					String oid = row.get("oid");
+					String assetmanagername = row.get("assetmanagername");
+
+					assetmanagerAndIDs.put(assetmanagername, oid);
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			BugMe.getInstance().log(e);
+		}
+
+		return assetmanagerAndIDs;
+	}
+
+	/**
+	 * Logs a message (helper method).
+	 * 
+	 * @param text the text to log
+	 */
+	private void log(String text)
+	{
+		debug.log(text);
+	}
 }

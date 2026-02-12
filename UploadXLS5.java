@@ -7266,7 +7266,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				{
 					if(null == topsCache)
 					{
-						topsCache = new Hashtable();
+						topsCache = new HashMap<String, Object>();
 					}
 					if(!topsCache.containsKey(oids_top[i]))
 					{
@@ -8207,7 +8207,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		System.err.println("ZLU2: FILLING TOPS CACHE " + topList.size() + " maximum is " + TOPS_CACHE_SIZE);
 		Date d1 = new Date();
 		topsCache = null;
-		topsCache = new Hashtable();
+		topsCache = new HashMap<String, Object>();
 		int cnt = 0;
 		for(String toid : topList.getTopIDs())
 		{
@@ -8249,7 +8249,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private void emptyLastZZ4Top()
 	{
-		lastZZ4Top = new Hashtable<String, Calendar>();
+		lastZZ4Top = new HashMap<String, Calendar>();
 	}
 
 	/**

@@ -150,19 +150,19 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private static int TOPS_CACHE_SIZE = 50;
 
 	/** The valid. */
-	public boolean valid = true;
+	private boolean valid = true;
 
 	/** The shortinfo. */
-	public String shortinfo = "";
+	private String shortinfo = "";
 
 	/** The bcc_emails. */
-	public String bcc_emails = "";
+	private String bcc_emails = "";
 
 	/** The SEND_MAILTO_ASSETMANAGER-variable. */
-	public String mailtoamcfg = "";
+	private String mailtoamcfg = "";
 
 	/** The session. */
-	public DynGenDataObj session = null;
+	private DynGenDataObj session = null;
 
 	/** The user obj. */
 	transient public DynGenDataObj userObj = null;
@@ -243,7 +243,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	transient HashMap<String, Calendar> lastZZ4Top = null;
 
 	/** The global. */
-	public DynGenDataObj global = null;
+	private DynGenDataObj global = null;
 
 	/** The thread agent. */
 	private transient ThreadAgent threadAgent;
@@ -353,6 +353,128 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private boolean enableDetailedLogging = true;
 	private Long starttime = null;
 	private Long endtime = null;
+
+	// Getters and Setters for encapsulated fields
+
+	/**
+	 * Gets the valid status.
+	 *
+	 * @return true if valid, false otherwise
+	 */
+	public boolean isValid()
+	{
+		return valid;
+	}
+
+	/**
+	 * Sets the valid status.
+	 *
+	 * @param valid the valid status to set
+	 */
+	public void setValid(boolean valid)
+	{
+		this.valid = valid;
+	}
+
+	/**
+	 * Gets the short info.
+	 *
+	 * @return the short info
+	 */
+	public String getShortinfo()
+	{
+		return shortinfo;
+	}
+
+	/**
+	 * Sets the short info.
+	 *
+	 * @param shortinfo the short info to set
+	 */
+	public void setShortinfo(String shortinfo)
+	{
+		this.shortinfo = shortinfo;
+	}
+
+	/**
+	 * Gets the BCC emails.
+	 *
+	 * @return the BCC emails
+	 */
+	public String getBccEmails()
+	{
+		return bcc_emails;
+	}
+
+	/**
+	 * Sets the BCC emails.
+	 *
+	 * @param bcc_emails the BCC emails to set
+	 */
+	public void setBccEmails(String bcc_emails)
+	{
+		this.bcc_emails = bcc_emails;
+	}
+
+	/**
+	 * Gets the mail to asset manager config.
+	 *
+	 * @return the mail to asset manager config
+	 */
+	public String getMailtoamcfg()
+	{
+		return mailtoamcfg;
+	}
+
+	/**
+	 * Sets the mail to asset manager config.
+	 *
+	 * @param mailtoamcfg the mail to asset manager config to set
+	 */
+	public void setMailtoamcfg(String mailtoamcfg)
+	{
+		this.mailtoamcfg = mailtoamcfg;
+	}
+
+	/**
+	 * Gets the session.
+	 *
+	 * @return the session
+	 */
+	public DynGenDataObj getSession()
+	{
+		return session;
+	}
+
+	/**
+	 * Sets the session.
+	 *
+	 * @param session the session to set
+	 */
+	public void setSession(DynGenDataObj session)
+	{
+		this.session = session;
+	}
+
+	/**
+	 * Gets the global data object.
+	 *
+	 * @return the global data object
+	 */
+	public DynGenDataObj getGlobal()
+	{
+		return global;
+	}
+
+	/**
+	 * Sets the global data object.
+	 *
+	 * @param global the global data object to set
+	 */
+	public void setGlobal(DynGenDataObj global)
+	{
+		this.global = global;
+	}
 
 	/**
 	 * Instantiates a new upload XLS 4.

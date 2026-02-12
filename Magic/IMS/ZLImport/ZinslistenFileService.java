@@ -445,4 +445,24 @@ public class ZinslistenFileService
 			return null;
 		}
 	}
+
+	/**
+	 * Gets the cached file name.
+	 * 
+	 * @return the cached file name, or null if not cached
+	 */
+	public String getCachedFile()
+	{
+		return cachedFile;
+	}
+
+	/**
+	 * Gets the cached content.
+	 * 
+	 * @return the cached content, or null if not cached
+	 */
+	public byte[] getCachedContent()
+	{
+		return cachedContent;
+	}
 }

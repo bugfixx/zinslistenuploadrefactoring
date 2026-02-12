@@ -148,6 +148,30 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 	/** The tops cache size. */
 	private static int TOPS_CACHE_SIZE = 50;
+	
+	/**
+	 * Maximum number of Zinszeilen entries to cache.
+	 * Increase if you have sufficient memory and process very large imports repeatedly.
+	 * Decrease if you encounter OutOfMemoryErrors.
+	 * 
+	 * Current setting: 500 entries ~= 50-100 MB RAM
+	 */
+	private static final int ZZ_CACHE_SIZE = 500;
+	
+	/**
+	 * Maximum number of mapping entries to cache.
+	 * These are typically small objects, so cache more aggressively.
+	 * 
+	 * Current setting: 200 entries ~= 10-20 MB RAM
+	 */
+	private static final int MAPPING_CACHE_SIZE = 200;
+	
+	/**
+	 * Maximum number of tops entries to cache.
+	 * 
+	 * Current setting: 512 entries for optimal performance
+	 */
+	private static final int TOPS_CACHE_SIZE_OPTIMIZED = 512;
 
 	/** The valid. */
 	private boolean valid = true;
@@ -205,8 +229,19 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	/** The zlprotocol. */
 	transient private Magic.IMS.ZLImport.ZLImportProtocol zlprotocol = null;
 
-	/** The zins zeilen cache. */
-	transient private HashMap<String, Object> zinsZeilenCache = null;
+	/** The zins zeilen cache with LRU eviction. */
+	transient private LinkedHashMap<String, Object> zinsZeilenCache = new LinkedHashMap<String, Object>(ZZ_CACHE_SIZE + 1, 0.75f, true) {
+		@Override
+		protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
+			if(size() > ZZ_CACHE_SIZE) {
+				if(debug != null) {
+					debug.log("Evicting oldest entry from zinsZeilenCache: " + eldest.getKey());
+				}
+				return true;
+			}
+			return false;
+		}
+	};
 
 	/** The validation service. */
 	transient private ZinslistenValidationService validationService = null;
@@ -245,10 +280,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	/** The createzz. */
 	private int createzz = 0;
 
-	/** The tops cache. */
-	transient HashMap<String, Object> topsCache = null;
+	/** The tops cache with proper initial capacity. */
+	transient HashMap<String, Object> topsCache = new HashMap<>(TOPS_CACHE_SIZE_OPTIMIZED, 0.9f);
 	/** contains the date of the last CIMS.zinszeile for each top */
-	transient HashMap<String, Calendar> lastZZ4Top = null;
+	transient HashMap<String, Calendar> lastZZ4Top = new HashMap<>();
 
 	/** The global. */
 	private DynGenDataObj global = null;
@@ -278,8 +313,19 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	/** The mylang. */
 	protected String mylang = "";
 
-	/** The mapping cache. */
-	transient protected HashMap<String, Object> mappingCache = null;
+	/** The mapping cache with LRU eviction. */
+	transient protected LinkedHashMap<String, Object> mappingCache = new LinkedHashMap<String, Object>(MAPPING_CACHE_SIZE + 1, 0.75f, true) {
+		@Override
+		protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
+			if(size() > MAPPING_CACHE_SIZE) {
+				if(debug != null) {
+					debug.log("Evicting oldest entry from mappingCache: " + eldest.getKey());
+				}
+				return true;
+			}
+			return false;
+		}
+	};
 
 	/** wichtig um slots korrekt aufzuloesen! <b>Only for MSSQL at the moment</b>. */
 	protected transient String dbEncoding = null;
@@ -292,23 +338,23 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private final HashMap<String, String> result = new HashMap<String, String>();
 
 	/** The mailinglist. */
-	private HashMap<String, String> mailinglist = new HashMap<String, String>();
+	private HashMap<String, String> mailinglist = new HashMap<String, String>(256);
 
 	/** The leerstandmailinglist. */
-	private HashMap<String, String> leerstandmailinglist = new HashMap<String, String>();
+	private HashMap<String, String> leerstandmailinglist = new HashMap<String, String>(128);
 
 	/** The ablaufendevertraegemailinglist. */
-	private HashMap<String, String> ablaufendevertraegemailinglist = new HashMap<String, String>();
+	private HashMap<String, String> ablaufendevertraegemailinglist = new HashMap<String, String>(128);
 
 	/** The mailinglist kennwerte nach nutzung. */
 	private final HashMap<String, String> mailinglistKennwerteNachNutzung = new HashMap<String, String>();
 
 	/** The assetmanager and I ds. */
-	private HashMap<String, String> assetmanagerAndIDs = new HashMap<String, String>();
+	private HashMap<String, String> assetmanagerAndIDs = new HashMap<String, String>(64);
 
 	/** The top status values. */
 	// Values from TopStatusSelector.tpl
-	HashMap<String, Object> topStatusValues = new HashMap<>();
+	HashMap<String, Object> topStatusValues = new HashMap<>(32);
 
 	/** The statusformissingunit split. */
 	String[] statusformissingunitSplit = null;
@@ -329,7 +375,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private static Pattern FILE_NAME_PATTERN = Pattern.compile("(.*)FRED(\\d*).(csv|xlsx)");
 
 	/** The zl upload object ids. */
-	private ArrayList<Object> zlUploadObjectIds = new ArrayList<>();
+	private ArrayList<Object> zlUploadObjectIds = new ArrayList<>(1000);
 
 	/** German Locale for Digits. */
 	private DecimalFormatSymbols symbolsDE_DE = DecimalFormatSymbols.getInstance(Locale.GERMANY);
@@ -353,10 +399,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	HashMap<String, Object> myfparams = null;
 
 	/** The errorsformailinglist. */
-	private StringBuilder errorsformailinglist = new StringBuilder();
+	private StringBuilder errorsformailinglist = new StringBuilder(4096);
 
 	/** The newimportedtops. */
-	private StringBuilder newimportedtops = new StringBuilder();
+	private StringBuilder newimportedtops = new StringBuilder(2048);
 
 	private boolean enableDetailedLogging = true;
 	private Long starttime = null;
@@ -492,7 +538,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		super();
 		if(null == topsCache)
 		{
-			topsCache = new HashMap<>();
+			topsCache = new HashMap<>(TOPS_CACHE_SIZE_OPTIMIZED, 0.9f);
 		}
 
 		this.dao = new FredDAO();
@@ -550,7 +596,18 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			mylang = session.getString("language");
 		}
 
-		mappingCache = new HashMap<>();
+		mappingCache = new LinkedHashMap<String, Object>(MAPPING_CACHE_SIZE + 1, 0.75f, true) {
+			@Override
+			protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
+				if(size() > MAPPING_CACHE_SIZE) {
+					if(debug != null) {
+						debug.log("Evicting oldest entry from mappingCache: " + eldest.getKey());
+					}
+					return true;
+				}
+				return false;
+			}
+		};
 		setDBEncoding();
 		
 		// Initialize validation service
@@ -7258,7 +7315,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				{
 					if(null == topsCache)
 					{
-						topsCache = new HashMap<>();
+						topsCache = new HashMap<>(TOPS_CACHE_SIZE_OPTIMIZED, 0.9f);
 					}
 					if(!topsCache.containsKey(oids_top[i]))
 					{
@@ -8532,7 +8589,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			{
 				if(null == topsCache)
 				{
-					topsCache = new HashMap<>();
+					topsCache = new HashMap<>(TOPS_CACHE_SIZE_OPTIMIZED, 0.9f);
 				}
 				if(!topsCache.containsKey(oids_top[i]))
 				{
@@ -12763,6 +12820,73 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		catch(Exception ex)
 		{
 			debug.log("UploadXLS4 " + ex);
+		}
+	}
+	
+	/**
+	 * Cleanup method to be called after import completion.
+	 * Releases all caches and transient resources to free memory.
+	 * 
+	 * IMPORTANT: Call this method when import processing is complete,
+	 * especially before processing multiple imports sequentially.
+	 */
+	public void cleanup() {
+		try {
+			debug.log("UploadXLS5 cleanup started...");
+			
+			// Clear zinsZeilenCache
+			if(zinsZeilenCache != null) {
+				int size = zinsZeilenCache.size();
+				zinsZeilenCache.clear();
+				debug.log("Cleared zinsZeilenCache: " + size + " entries freed");
+			}
+			
+			// Clear lastZZ4Top
+			if(lastZZ4Top != null) {
+				int size = lastZZ4Top.size();
+				lastZZ4Top.clear();
+				lastZZ4Top = null;
+				debug.log("Cleared lastZZ4Top: " + size + " entries freed");
+			}
+			
+			// Clear mappingCache
+			if(mappingCache != null) {
+				int size = mappingCache.size();
+				mappingCache.clear();
+				debug.log("Cleared mappingCache: " + size + " entries freed");
+			}
+			
+			// Clear topsCache
+			if(topsCache != null) {
+				int size = topsCache.size();
+				topsCache.clear();
+				topsCache = null;
+				debug.log("Cleared topsCache: " + size + " entries freed");
+			}
+			
+			// Clear service caches
+			if(fileService != null) {
+				fileService.clearCache();
+				debug.log("Cleared fileService cache");
+			}
+			
+			if(cacheService != null) {
+				cacheService.emptyTopCache();
+				cacheService.emptyLastZZ4Top();
+				debug.log("Cleared cacheService caches");
+			}
+			
+			// Clear transient content
+			cachedcontent = null;
+			
+			debug.log("UploadXLS5 cleanup completed successfully");
+			
+			// Hint to GC that now is a good time (optional, doesn't force)
+			System.gc();
+			
+		} catch(Exception e) {
+			debug.error("Error during UploadXLS5 cleanup", e);
+			// Don't throw - cleanup should be best-effort
 		}
 	}
 

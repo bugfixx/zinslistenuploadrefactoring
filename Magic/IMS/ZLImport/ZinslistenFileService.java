@@ -465,4 +465,21 @@ public class ZinslistenFileService
 	{
 		return cachedContent;
 	}
+	
+	/**
+	 * Clears the file content cache to free memory.
+	 * Should be called after import processing is complete.
+	 */
+	public void clearCache() {
+		try {
+			if(cachedContent != null) {
+				debug.log("Clearing file cache: " + cachedContent.length + " bytes");
+				cachedContent = null;
+			}
+			cachedFile = null;
+			debug.log("ZinslistenFileService cache cleared");
+		} catch(Exception e) {
+			debug.error("Error clearing file cache", e);
+		}
+	}
 }

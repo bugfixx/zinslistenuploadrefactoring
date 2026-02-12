@@ -39,8 +39,7 @@ public class ZinslistenValidationService
 	{
 		if(DAInst == null)
 		{
-			Connector conn = null;
-			conn = new Connector();
+			Connector conn = new Connector();
 			DAInst = conn.getDataAgent();
 		}
 		try
@@ -165,8 +164,7 @@ public class ZinslistenValidationService
 	{
 		if(DAInst == null)
 		{
-			Connector conn = null;
-			conn = new Connector();
+			Connector conn = new Connector();
 			DAInst = conn.getDataAgent();
 		}
 		try
@@ -192,6 +190,11 @@ public class ZinslistenValidationService
 		return errs;
 	}
 
+	/** Common vacancy/Leerstand terms. */
+	private static final String[] VACANCY_TERMS = {
+		"leerstehung", "vacant", "vacancy", "leer", "(leer)", "leerstand", "not rented surface"
+	};
+
 	/**
 	 * Checks if a string represents a Leerstand (vacancy).
 	 *
@@ -200,11 +203,19 @@ public class ZinslistenValidationService
 	 */
 	public boolean checkLeerstandString(String actualmieter)
 	{
-		if(actualmieter.equalsIgnoreCase("leerstehung") || actualmieter.equalsIgnoreCase("vacant") || actualmieter.equalsIgnoreCase("vacancy") || actualmieter.equalsIgnoreCase("leer") || actualmieter.equalsIgnoreCase("(leer)") || actualmieter.contains("leerstand") || actualmieter.equalsIgnoreCase("not rented surface"))
+		if(actualmieter == null)
 		{
-			return true;
+			return false;
 		}
-
+		
+		String lowerMieter = actualmieter.toLowerCase();
+		for(String term : VACANCY_TERMS)
+		{
+			if(lowerMieter.equals(term) || lowerMieter.contains(term))
+			{
+				return true;
+			}
+		}
 		return false;
 	}
 }

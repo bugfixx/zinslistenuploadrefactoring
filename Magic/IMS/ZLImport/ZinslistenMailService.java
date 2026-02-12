@@ -21,7 +21,7 @@ import net.metamagix.essence.tools.Liquid.LiquidParserMailWrapper;
  * 
  * Error Reporting:
  * - sendMailWithErrors() - Sends email with import errors to configured recipients
- * - sendMailWithErrorsToExcecutor(String subject, String message) - Sends error emails to executor
+ * - sendMailWithErrorsToExecutor(String subject, String message) - Sends error emails to executor
  * 
  * Change Notifications:
  * - sendMailWithChanges() - Sends email with import changes/results
@@ -31,7 +31,7 @@ import net.metamagix.essence.tools.Liquid.LiquidParserMailWrapper;
  * - sendMailToAssetmanagerSingleObject(String mailAndName, String haus) - Sends to single assetmanager for one object
  * 
  * Executor Communications:
- * - sendMailToExcecutor(String results) - Sends results to executor
+ * - sendMailToExecutor(String results) - Sends results to executor
  * 
  * Helper Methods:
  * - getAssetmanagerMailadressFromObject(String hausid) - Retrieves assetmanager email from Haus object

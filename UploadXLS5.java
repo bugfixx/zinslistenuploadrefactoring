@@ -205,6 +205,15 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	/** The validation service. */
 	transient private ZinslistenValidationService validationService = null;
 
+	/** The file service. */
+	transient private Magic.IMS.ZLImport.ZinslistenFileService fileService = null;
+
+	/** The database service. */
+	transient private Magic.IMS.ZLImport.ZinslistenDatabaseService databaseService = null;
+
+	/** The mail service. */
+	transient private Magic.IMS.ZLImport.ZinslistenMailService mailService = null;
+
 	/** The csv str. */
 	private String csvStr = "";
 

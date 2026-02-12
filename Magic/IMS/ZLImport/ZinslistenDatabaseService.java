@@ -472,10 +472,8 @@ public class ZinslistenDatabaseService
 
 		if(res.size() > 0)
 		{
-			for(int i = 0; i < res.size(); i++)
+			for(Map<String, String> h : res)
 			{
-				Map<String, String> h = res.get(i);
-
 				String mailAndName = "";
 
 				if(h.get("email").length() > 0)
@@ -621,10 +619,8 @@ public class ZinslistenDatabaseService
 
 			if(res != null && res.size() > 0)
 			{
-				for(int i = 0; i < res.size(); i++)
+				for(Map<String, String> row : res)
 				{
-					Map<String, String> row = res.get(i);
-
 					String oid = row.get("oid");
 					String assetmanagername = row.get("assetmanagername");
 

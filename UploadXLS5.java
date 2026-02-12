@@ -151,6 +151,16 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 	/** The tops cache size. */
 	private static int TOPS_CACHE_SIZE = 50;
+	
+	/** Template type constants for CIMS objects */
+	private static final String TEMPLATE_TYPE_HAUS = "CIMS.haus";
+	private static final String TEMPLATE_TYPE_TOP = "CIMS.top";
+	private static final String TEMPLATE_TYPE_ZINSZEILE = "CIMS.zinszeile";
+	private static final String TEMPLATE_TYPE_GEBAEUDE = "CIMS.gebaeude";
+	private static final String TEMPLATE_TYPE_MIETVERTRAG = "CIMS.mietvertrag";
+	private static final String TEMPLATE_TYPE_INDEX = "CIMS.index";
+	private static final String TEMPLATE_TYPE_DATENBESTAETIGUNG = "CIMS.datenbestaetigung";
+	private static final String TEMPLATE_TYPE_TOP_STATUS_SELECTOR = "CIMS.TopStatusSelector";
 
 	/** The valid. */
 	public boolean valid = true;
@@ -7416,7 +7426,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 								PBInst = conn.getPageBuilder();
 							}
 
-							String tcode = PBInst.readTemplate("CIMS.mietvertrag");
+							String tcode = PBInst.readTemplate(TEMPLATE_TYPE_MIETVERTRAG);
 
 							DynGenDataObj newMietvertragDgd = new DynGenDataObj();
 							if(null == DAInst)
@@ -7592,7 +7602,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					// Write all in zinslistenconfig defined Values to Mietvertrag
 					mietvertragDgd = writeMietvertragsValues(mietvertragDgd, zl);
 
-					DAInst.storeObject(mietvertragDgd, "CIMS.mietvertrag", mietvertragsid, session);
+					DAInst.storeObject(mietvertragDgd, TEMPLATE_TYPE_MIETVERTRAG, mietvertragsid, session);
 				}
 			}
 
@@ -7988,7 +7998,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				PBInst = conn.getPageBuilder();
 			}
 
-			String tcode = PBInst.readTemplate("CIMS.haus");
+			String tcode = PBInst.readTemplate(TEMPLATE_TYPE_HAUS);
 
 			DynGenDataObj dgd = new DynGenDataObj();
 			if(null == DAInst)
@@ -8065,7 +8075,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
 				DAInst = conn.getDataAgent();
 			}
-			String id = DAInst.storeObject(dgd, "CIMS.haus", null, session);
+			String id = DAInst.storeObject(dgd, TEMPLATE_TYPE_HAUS, null, session);
 			return id;
 		}
 		catch(Exception e)
@@ -8124,7 +8134,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						hausDGD.set("var." + key, additionalFields.get(key));
 					}
 				}
-				String id = DAInst.storeObject(hausDGD, "CIMS.haus", oid, session);
+				String id = DAInst.storeObject(hausDGD, TEMPLATE_TYPE_HAUS, oid, session);
 			}
 		}
 		catch(Exception ex)
@@ -8515,7 +8525,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				errs = new String(olderrs + "\n" + errs);
 			}
 			hdgd.set("var.ignoreerrors", errs);
-			DAInst.storeObject(hdgd, "CIMS.haus", hausid, session);
+			DAInst.storeObject(hdgd, TEMPLATE_TYPE_HAUS, hausid, session);
 		}
 		catch(Exception x)
 		{
@@ -9155,7 +9165,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					}
 				}
 				h.set("slot.gtops", gtops);
-				String id = DAInst.storeObject(h, "CIMS.gebaeude", oid_gebaeude, session);
+				String id = DAInst.storeObject(h, TEMPLATE_TYPE_GEBAEUDE, oid_gebaeude, session);
 				if(null == id)
 				{
 					log("Konnte Gebaeude (" + oid_gebaeude + ") nicht speichern!");

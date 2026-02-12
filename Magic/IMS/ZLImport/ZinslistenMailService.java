@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
@@ -515,7 +514,7 @@ public class ZinslistenMailService
 		// PKO - REMOVE - Only testing purpose
 		for(String mailadress : mailinglist.keySet())
 		{
-			System.out.println("AM MAILS AN FOLGENDE ADRESSEN (sendMailToAssetmanager): " + mailadress);
+			debug.log("AM MAILS AN FOLGENDE ADRESSEN (sendMailToAssetmanager): " + mailadress);
 			BugMe.getInstance("maillogfile").log("RRIMPORT> [" + parent.getName() + "] preparing rr mail to " + mailadress);
 
 		}

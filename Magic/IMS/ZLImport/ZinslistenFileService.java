@@ -435,7 +435,7 @@ public class ZinslistenFileService
 			}
 			
 			Date d2 = new Date();
-			System.out.println("Zinsliste lesen: " + (d2.getTime() - d1.getTime()) + " ms.");
+			debug.log("Zinsliste lesen: " + (d2.getTime() - d1.getTime()) + " ms.");
 			return zl;
 		}
 		catch(Exception e)

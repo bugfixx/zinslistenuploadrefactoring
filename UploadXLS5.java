@@ -223,6 +223,12 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	/** The crud service. */
 	transient private Magic.IMS.ZLImport.ZinslistenDatabaseCRUDService crudService = null;
 
+	/** The report service. */
+	transient private Magic.IMS.ZLImport.ZinslistenReportService reportService = null;
+
+	/** The utility service. */
+	transient private Magic.IMS.ZLImport.ZinslistenUtilityService utilityService = null;
+
 	/** The csv str. */
 	private String csvStr = "";
 
@@ -6223,22 +6229,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private String createJsonResponseWithCustomData(String myoid, String jsonRes, String vueStatus, String templatetype)
 	{
-		try
-		{
-			org.json.JSONObject response = new org.json.JSONObject();
-			org.json.JSONObject customdata = new org.json.JSONObject(jsonRes);
-			response.put("ID", myoid);
-			response.put("status", vueStatus);
-			response.put("templatetype", templatetype);
-			response.put("customdata", customdata);
-
-			return response.toString();
-		}
-		catch(Exception e)
-		{
-			BugMe.getInstance().error(e);
-			return "";
-		}
+		return getReportService().createJsonResponseWithCustomData(myoid, jsonRes, vueStatus, templatetype);
 	}
 
 	/**
@@ -6252,70 +6243,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private Boolean getStatusOfFreigabe(String hausid, Zinsliste azl)
 	{
-		try
-		{
-			Hashtable<String, Object> args = new Hashtable<String, Object>();
-			ArgsHelper argsHelper = new ArgsHelper(args);
-			argsHelper.setAdvancedFields(true);
-			argsHelper.setMainTemplateType("CIMS.datenbestaetigung");
-			argsHelper.addTemplateType("haus", "CIMS.haus");
-
-			argsHelper.addField("ET0.abgelehnt");
-			argsHelper.addField("ET0.eingeschraenkt");
-			argsHelper.addField("ET0.datum");
-			argsHelper.addField("haus_ID", "hausid");
-
-			// Bsp: Periode = 2024 M2
-			String periode = azl.getJahr() + " M" + azl.getMonat();
-
-			argsHelper.addWhere("haus_ID =" + hausid + " AND ET0.periode='" + periode + "'");
-
-			String mydom = (String)session.get("domainid");
-			if(mydom.length() == 0)
-			{
-				argsHelper.addCondition("DOMAIN", "ALLDOMAINS");
-			}
-			else
-			{
-				argsHelper.addCondition("DOMAIN", mydom);
-			}
-
-			// query result vector
-			Vector<Hashtable<String, String>> res = null;
-			if(null == DAInst)
-			{
-				net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
-				DAInst = conn.getDataAgent();
-			}
-
-			QueryResult qr = DAInst.queryObjectWithResult(argsHelper.getArgs());
-			res = qr.getResult();
-
-			if(res.size() > 0)
-			{
-				Hashtable<String, String> row = res.get(0);
-
-				String abgelehnt = row.get("abgelehnt");
-				if(abgelehnt.equals("0"))
-				{
-					// import not allowed
-					return false;
-				}
-				else
-				{
-					// Import allowed
-					return true;
-				}
-			}
-		}
-		catch(Exception qe)
-		{
-			debug.error(this, "Exception querying objects.");
-			debug.error(qe);
-			set("var.result", "Interner Fehler:" + qe.getMessage());
-
-		}
-		return true;
+		return getReportService().getStatusOfFreigabe(hausid, azl, DAInst);
 	}
 
 	/**
@@ -7146,40 +7074,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private void getTopStatusValues()
 	{
-		if(topStatusValues == null || topStatusValues.size() == 0)
-		{
-
-			TemplateReader tr = TemplateReader.getInstance();
-			DynGenDataObj dgdTopStatusSelector = tr.getFlavouredDGDForTemplate("CIMS.TopStatusSelector", global, session);
-
-			String language = session.getString("language").toUpperCase();
-			if(language.equals("DE"))
-			{
-				language = "";
-			}
-
-			String alternatives = (String)dgdTopStatusSelector.get("var.alternatives");
-			String textalternatives = (String)dgdTopStatusSelector.get("var.textalternatives" + language);
-
-			String[] alts = CoolStringTool.splitOnce(alternatives);
-			String[] texts = CoolStringTool.splitOnce(textalternatives);
-			try
-			{
-				while(alts != null)
-				{
-					topStatusValues.put(new String(alts[0]), texts[0]);
-					alternatives = alts[1];
-					textalternatives = texts[1];
-					alts = CoolStringTool.splitOnce(alternatives);
-					texts = CoolStringTool.splitOnce(textalternatives);
-				}
-			}
-			catch(Exception ex)
-			{
-				debug.error(this, "Can't create list of values ...");
-				debug.error(ex);
-			}
-		}
+		topStatusValues = getUtilityService().loadTopStatusValues();
 	}
 
 	/**
@@ -7190,44 +7085,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private void setImportStatus(String string)
 	{
-		try
-		{
-
-			// 2=Fertig, 4=Fehler > keine Aenderung wenn Import Fehrlerhaft oder Fertig, bedeutet er ist komplett durch
-			String actualImportStatus = this.getString("var.importstatus");
-			if(actualImportStatus.equals("2") || actualImportStatus.equals("4"))
-			{
-				return;
-			}
-
-			if(null == DAInst)
-			{
-				net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
-				DAInst = conn.getDataAgent();
-			}
-
-			String id = (String)session.get("CURRENT_OID");
-			if(id == null || id.length() == 0)
-			{
-				id = (String)this.get("id");
-			}
-			this.set("var.importstatus", string);
-
-			this.fixFileLink();
-
-			if(id == null || id.length() == 0)
-			{
-				DAInst.storeObject(this, this.getTemplateType(), null, session);
-			}
-			else
-			{
-				DAInst.storeObject(this, this.getTemplateType(), id, session);
-			}
-		}
-		catch(Exception e)
-		{
-			debug.error(e);
-		}
+		getUtilityService().setImportStatus(string, this, DAInst);
 	}
 
 	/**
@@ -8160,6 +8018,34 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			crudService = new Magic.IMS.ZLImport.ZinslistenDatabaseCRUDService(FDAInst, session, global, debug, this);
 		}
 		return crudService;
+	}
+
+	/**
+	 * Gets the report service, initializing it lazily if needed.
+	 *
+	 * @return the report service
+	 */
+	private Magic.IMS.ZLImport.ZinslistenReportService getReportService()
+	{
+		if(reportService == null)
+		{
+			reportService = new Magic.IMS.ZLImport.ZinslistenReportService(session, global, DAInst);
+		}
+		return reportService;
+	}
+
+	/**
+	 * Gets the utility service, initializing it lazily if needed.
+	 *
+	 * @return the utility service
+	 */
+	private Magic.IMS.ZLImport.ZinslistenUtilityService getUtilityService()
+	{
+		if(utilityService == null)
+		{
+			utilityService = new Magic.IMS.ZLImport.ZinslistenUtilityService(session, global, DAInst, debug, getCrudService());
+		}
+		return utilityService;
 	}
 
 	/**
@@ -11450,264 +11336,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private String getTopInfoStringFromZZHT(Hashtable h)
 	{
-		String top = (String)h.get("top");
-		if(null == top)
-		{
-			top = "";
-		}
-
-		top = Zinsliste.removeEdvNrIfEqualToNameFromTopName(top);
-		String mieteinheitenanz = (String)h.get("mieteinheitenanz");
-		if(null != mieteinheitenanz)
-		{
-			// mieteinheitenanz = Currency.formatCent(mieteinheitenanz);
-			if(!mieteinheitenanz.equals("null"))
-			{
-				if(mieteinheitenanz.endsWith(",00"))
-				{
-					mieteinheitenanz = mieteinheitenanz.replace(",00", "");
-				}
-			}
-		}
-		else
-		{
-			mieteinheitenanz = "1";
-		}
-
-		String tnutzung = (String)h.get("nutzung");
-		String tou = (String)h.get("nutzung");
-
-		LinkedHashMap lhm = Selector.getValue2NameMap("CIMS.SelectorNutzung", null, session, null, null);
-		String fullnutzung = (String)lhm.get(tnutzung);
-		if(null == fullnutzung)
-		{
-			fullnutzung = tnutzung;
-		}
-
-		if(session.getString("language").toUpperCase().equals("EN"))
-		{
-			String englshortname = ZLImport.englishTypeOfUseShortMap.get(tnutzung);
-			if(null != englshortname)
-			{
-				tnutzung = englshortname;
-			}
-		}
-		if(null == tnutzung)
-		{
-			tnutzung = "";
-			tou = "";
-		}
-		String tmieter = (String)h.get("mieter");
-		if(null == tmieter)
-		{
-			tmieter = "";
-		}
-
-		String tfl = (String)h.get("fl");
-		if(null == tfl)
-		{
-			tfl = (String)h.get("nfl");
-			if(null == tfl)
-			{
-				tfl = "";
-			}
-			if(tfl.length() == 0)
-			{
-				tfl = (String)h.get("leerfl");
-				if(null == tfl)
-				{
-					tfl = "";
-				}
-				if(tfl.length() == 0)
-				{
-					tfl = (String)h.get("ffl");
-					if(null == tfl)
-					{
-						tfl = "";
-					}
-				}
-
-			}
-		}
-		String hmz = (String)h.get("hmz");
-		if(null == hmz)
-		{
-			hmz = "0";
-		}
-
-		String hrmiete = hmz;
-		String hrmiete_OC = hmz;
-		BigDecimal hmzdiversexrateBD = null;
-
-		String hmzdiversecurrency = (String)h.get("hmzdiversecurrency");
-		if(null == hmzdiversecurrency)
-		{
-			hmzdiversecurrency = "";
-		}
-		String hmzdiversexrate = (String)h.get("hmzdiversexrate");
-		if(null == hmzdiversexrate)
-		{
-			hmzdiversexrate = "1";
-		}
-		if(null != hmzdiversecurrency && null != hmzdiversexrate)
-		{
-			if(!hmzdiversecurrency.equals("EUR") && !hmzdiversecurrency.equals(""))
-			{
-				// Fremdwährung
-				Currency hmzdiversexrateC = new Currency(hmzdiversexrate);
-				if(null != hmzdiversexrateC)
-				{
-					hmzdiversexrateBD = hmzdiversexrateC.getBigDecimal();
-				}
-			}
-		}
-
-		Currency anz = new Currency(mieteinheitenanz);
-		Currency flaeche = new Currency(tfl);
-
-		if(null == hmzdiversexrateBD)
-		{
-			hmzdiversexrateBD = BigDecimal.ONE;
-		}
-		if(hmz.length() > 0)
-		{
-			Currency miete = new Currency(hmz);
-			BigDecimal mieteBD = miete.getBigDecimal();
-			BigDecimal mieteBD_OC = miete.getBigDecimal();
-			// Originalwaehrung
-			Currency moc = new Currency();
-			if(mieteBD_OC != null)
-			{
-				mieteBD_OC = mieteBD_OC.multiply(hmzdiversexrateBD);
-				moc = new Currency(mieteBD_OC);
-				hrmiete_OC = moc.getFormattedStringValue();
-			}
-			if(tou.equals("P") || tou.equals("GA") || tou.equals("SP"))
-			{
-
-				BigDecimal anzBD = anz.getBigDecimal();
-				if(null != mieteBD && null != anzBD && !anzBD.equals(BigDecimal.ZERO))
-				{
-					mieteBD = mieteBD.divide(anzBD, RoundingMode.HALF_EVEN);
-					mieteBD = mieteBD.setScale(2, RoundingMode.HALF_EVEN);
-					Currency m = new Currency(mieteBD);
-					hrmiete = m.getFormattedStringValue();
-					// Originalwaehrung
-					if(mieteBD_OC != null)
-					{
-						mieteBD_OC = mieteBD_OC.divide(anzBD, RoundingMode.HALF_EVEN);
-						mieteBD_OC = mieteBD_OC.setScale(2, RoundingMode.HALF_EVEN);
-						moc = new Currency(mieteBD_OC);
-					}
-					hrmiete_OC = moc.getFormattedStringValue();
-				}
-			}
-			else
-			{
-
-				BigDecimal flBD = flaeche.getBigDecimal();
-				if(null != mieteBD && null != flBD && !flBD.equals(BigDecimal.ZERO))
-				{
-					mieteBD = mieteBD.divide(flBD, RoundingMode.HALF_EVEN);
-					mieteBD = mieteBD.setScale(2, RoundingMode.HALF_EVEN);
-					Currency m = new Currency(mieteBD);
-					hrmiete = m.getFormattedStringValue();
-					// Originalwaehrung
-					if(mieteBD_OC != null)
-					{
-						mieteBD_OC = mieteBD_OC.divide(flBD, RoundingMode.HALF_EVEN);
-						mieteBD_OC = mieteBD_OC.setScale(2, RoundingMode.HALF_EVEN);
-						moc = new Currency(mieteBD_OC);
-					}
-					hrmiete_OC = moc.getFormattedStringValue();
-				}
-			}
-		}
-
-		String tmvv = (String)h.get("mietvertragvon");
-		if(null != tmvv)
-		{
-			DateTime dt = new DateTime(tmvv);
-			if(null != dt)
-			{
-				String dtStr = dt.getFormattedStringValueDay();
-				if(null != dtStr)
-				{
-					tmvv = dtStr;
-				}
-				else
-				{
-					tmvv = "";
-				}
-			}
-		}
-		else
-		{
-			tmvv = "";
-		}
-
-		String tmvb = (String)h.get("mietvertragbis");
-		if(null != tmvb)
-		{
-			DateTime dt = new DateTime(tmvb);
-			if(null != dt)
-			{
-				String dtStr = dt.getFormattedStringValueDay();
-				if(null != dtStr)
-				{
-					tmvb = dtStr;
-				}
-				else
-				{
-					tmvb = "";
-				}
-			}
-		}
-		else
-		{
-			tmvb = "";
-		}
-
-		if(null == tou)
-		{
-			tou = "";
-		}
-		tou = tou.toUpperCase();
-		String lang = session.getString("language");
-		if(tou.equals("P") || tou.equals("GA") || tou.equals("SP"))
-		{
-			if(hmzdiversexrateBD.compareTo(BigDecimal.ONE) == 0)
-			{ // Umrechnungskurs 1 = Systemwaehrung
-				return Tr.t("INFO_WITHOUT_AREA_EUR", lang, top, tmieter, fullnutzung, tfl, mieteinheitenanz, hrmiete, tmvv, tmvb, hmzdiversecurrency, hrmiete_OC);
-			}
-			else
-			{
-				return Tr.t("INFO_WITHOUT_AREA", lang, top, tmieter, fullnutzung, tfl, mieteinheitenanz, hrmiete, tmvv, tmvb, hmzdiversecurrency, hrmiete_OC);
-			}
-		}
-		else if(tou.equals("S") && flaeche.equalsZero())
-		{
-			if(hmzdiversexrateBD.compareTo(BigDecimal.ONE) == 0)
-			{ // Umrechnungskurs 1 = Systemwaehrung
-				return Tr.t("INFO_WITHOUT_AREA_EUR", lang, top, tmieter, fullnutzung, tfl, mieteinheitenanz, hrmiete, tmvv, tmvb, hmzdiversecurrency, hrmiete_OC);
-			}
-			else
-			{
-				return Tr.t("INFO_WITHOUT_AREA", lang, top, tmieter, fullnutzung, tfl, mieteinheitenanz, hrmiete, tmvv, tmvb, hmzdiversecurrency, hrmiete_OC);
-			}
-		}
-		else
-		{
-			if(hmzdiversexrateBD.compareTo(BigDecimal.ONE) == 0)
-			{ // Umrechnungskurs 1 = Systemwaehrung
-				return Tr.t("INFO_WITH_AREA_EUR", lang, top, tmieter, fullnutzung, tfl, mieteinheitenanz, hrmiete, tmvv, tmvb, hmzdiversecurrency, hrmiete_OC);
-			}
-			else
-			{
-				return Tr.t("INFO_WITH_AREA", lang, top, tmieter, fullnutzung, tfl, mieteinheitenanz, hrmiete, tmvv, tmvb, hmzdiversecurrency, hrmiete_OC);
-
-			}
-		}
+		return getReportService().getTopInfoStringFromZZHT(h, session.getString("language"));
 	}
 
 	/**
@@ -11720,194 +11349,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private void generatePeriodenvergleich(String oid_haus, Zinsliste azl)
 	{
-		try
-		{
-			TopoTool topotool = new TopoTool(session, global);
-
-			if(oid_haus != null && oid_haus.length() > 0)
-			{
-				TopoQueries topoQueries = new TopoQueries(session, global);
-				String[] nutzungBestandsfl = {
-					"B",
-					"G",
-					"W",
-					"H",
-					"L",
-					"S",
-					"LG",
-					"PR",
-					"P",
-					"GA",
-					"SP"};
-				String[] hIDs = new String[1];
-				hIDs[0] = oid_haus;
-				Hashtable<String, Hashtable<String, String>> mietsummenAktuellePeriode = topoQueries.monatsSummenNachNutzung(azl.monat, azl.jahr, hIDs, nutzungBestandsfl, null, null, null, null, null, null, null, null, null, null, false, true);
-
-				if(mietsummenAktuellePeriode != null && mietsummenAktuellePeriode.size() > 0)
-				{
-					Hashtable<String, String> vorperiode = topoQueries.getZinslistenMonatForHausVorperiode(oid_haus, azl.monat, azl.jahr);
-					Hashtable<String, String> resultVorPeriode = null;
-					Hashtable<String, Hashtable<String, String>> mietsummenVorPeriode = null;
-					if(vorperiode.containsKey("monat") && vorperiode.get("monat").length() > 0 && vorperiode.containsKey("jahr") && vorperiode.get("jahr").length() > 0)
-					{
-						mietsummenVorPeriode = topoQueries.monatsSummenNachNutzung(vorperiode.get("monat"), vorperiode.get("jahr"), hIDs, nutzungBestandsfl, null, null, null, null, null, null, null, null, null, null, false, true);
-					}
-					// Create a nice table and add values to mailinglist!
-
-					String mailAndName = getAssetmanagerMailadressFromObject(topotool.getHausOID(azl));
-					// PKO - REMOVE - Only testing purpose
-					System.out.println("AM MAILS TO (3): " + mailAndName + " // Hausinfos:" + String.valueOf(azl.edvNr) + " - " + String.valueOf(azl.adresse) + " - " + String.valueOf(azl.ort) + " - " + String.valueOf(azl.plz));
-
-					if(mailinglistKennwerteNachNutzung.containsKey(mailAndName))
-					{
-						// get email and append link
-						StringBuffer mailtext = new StringBuffer();
-						mailtext.append(mailinglistKennwerteNachNutzung.get(mailAndName));
-
-						String diffHmzist = "";
-						String diffNfl = "";
-						String diffLeerfl = "";
-
-						// Werte aktuelle Periode
-						for(String key : mietsummenAktuellePeriode.keySet())
-						{
-							BigDecimal val1 = new BigDecimal(0);
-							BigDecimal val2 = new BigDecimal(0);
-							BigDecimal val3 = new BigDecimal(0);
-							BigDecimal val1vp = new BigDecimal(0);
-							BigDecimal val2vp = new BigDecimal(0);
-							BigDecimal val3vp = new BigDecimal(0);
-
-							Hashtable<String, String> resultAktuellePeriode = mietsummenAktuellePeriode.get(key);
-							if(null != resultAktuellePeriode && null != resultVorPeriode)
-							{
-								mailtext.append(Tr.t("diffRow", mylang, azl.adresse, resultAktuellePeriode.get("monat") + "/" + resultAktuellePeriode.get("jahr"), resultAktuellePeriode.get("nutzung"), CoolStringTool.getFormattedAndCorrectedValue(resultVorPeriode.get("hmzist"), false), CoolStringTool.getFormattedAndCorrectedValue(resultVorPeriode.get("nfl"), false), CoolStringTool.getFormattedAndCorrectedValue(resultVorPeriode.get("leerfl"), false)));
-							}
-							// Werte Vorperiode
-							if(mietsummenVorPeriode != null && mietsummenVorPeriode.containsKey(key))
-							{
-								resultVorPeriode = mietsummenVorPeriode.get(key);
-
-								if(resultVorPeriode != null)
-								{
-									val1vp = new BigDecimal(resultVorPeriode.get("hmzist"));
-									val2vp = new BigDecimal(resultVorPeriode.get("nfl"));
-									val3vp = new BigDecimal(resultVorPeriode.get("leerfl"));
-									mailtext.append(Tr.t("diffRow", mylang, "", resultVorPeriode.get("monat") + "/" + resultAktuellePeriode.get("jahr"), resultVorPeriode.get("nutzung"), CoolStringTool.getFormattedAndCorrectedValue(resultVorPeriode.get("hmzist"), false), CoolStringTool.getFormattedAndCorrectedValue(resultVorPeriode.get("nfl"), false), CoolStringTool.getFormattedAndCorrectedValue(resultVorPeriode.get("leerfl"), false)));
-								}
-								else
-								{
-									mailtext.append(Tr.t("diffRow", mylang, "", "", "", "-", "-", "-"));
-								}
-							}
-							else
-							{
-								mailtext.append(Tr.t("diffRow", mylang, "", "", "", "-", "-", "-"));
-							}
-
-							// Hier noch eine Differenzzeile einfuegen
-							String diff = Tr.t("diff", mylang);
-
-							diffHmzist = CoolStringTool.getFormattedAndCorrectedValue(val1.subtract(val1vp).toString(), false);
-							diffNfl = CoolStringTool.getFormattedAndCorrectedValue(val2.subtract(val2vp).toString(), false);
-							diffLeerfl = CoolStringTool.getFormattedAndCorrectedValue(val3.subtract(val3vp).toString(), false);
-
-							mailtext.append(Tr.t("diffRow", mylang, diff, "", "", diffHmzist, diffNfl, diffLeerfl));
-
-						}
-
-						boolean sendmailonlyonchange = this.getBoolean("var.sendmailonlyonchange", true);
-						if(diffHmzist.equals("0") && diffNfl.equals("0") && diffLeerfl.equals("0") && sendmailonlyonchange)
-						{
-							// Zeile nicht hinzufuegen, weil keine Aenderung vorhanden!
-						}
-						else
-						{
-							mailinglistKennwerteNachNutzung.put(mailAndName, mailtext.toString());
-						}
-					}
-					else
-					{
-						// add email and headers then append link
-						StringBuffer mailtext = new StringBuffer();
-
-						mailtext.append("<br><br>");
-						mailtext.append("<table>");
-
-						mailtext.append(Tr.t("diffHeadRow", mylang));
-
-						String diffHmzist = "";
-						String diffNfl = "";
-						String diffLeerfl = "";
-
-						// Werte aktuelle Periode
-						for(String key : mietsummenAktuellePeriode.keySet())
-						{
-							BigDecimal val1 = new BigDecimal(0);
-							BigDecimal val2 = new BigDecimal(0);
-							BigDecimal val3 = new BigDecimal(0);
-							BigDecimal val1vp = new BigDecimal(0);
-							BigDecimal val2vp = new BigDecimal(0);
-							BigDecimal val3vp = new BigDecimal(0);
-
-							Hashtable<String, String> resultAktuellePeriode = mietsummenAktuellePeriode.get(key);
-							val1 = new BigDecimal(resultAktuellePeriode.get("hmzist"));
-							val2 = new BigDecimal(resultAktuellePeriode.get("nfl"));
-							val3 = new BigDecimal(resultAktuellePeriode.get("leerfl"));
-
-							mailtext.append(Tr.t("diffRow", mylang, azl.adresse, resultAktuellePeriode.get("monat") + "/" + resultAktuellePeriode.get("jahr"), resultAktuellePeriode.get("nutzung"), CoolStringTool.getFormattedAndCorrectedValue(resultAktuellePeriode.get("hmzist"), false), CoolStringTool.getFormattedAndCorrectedValue(resultAktuellePeriode.get("nfl"), false), CoolStringTool.getFormattedAndCorrectedValue(resultAktuellePeriode.get("leerfl"), false)));
-							// Werte Vorperiode
-							if(mietsummenVorPeriode != null && mietsummenVorPeriode.containsKey(key))
-							{
-								resultVorPeriode = mietsummenVorPeriode.get(key);
-
-								if(resultVorPeriode != null)
-								{
-									val1vp = new BigDecimal(resultVorPeriode.get("hmzist"));
-									val2vp = new BigDecimal(resultVorPeriode.get("nfl"));
-									val3vp = new BigDecimal(resultVorPeriode.get("leerfl"));
-									mailtext.append(Tr.t("diffRow", mylang, "", resultVorPeriode.get("monat") + "/" + resultVorPeriode.get("jahr"), resultAktuellePeriode.get("nutzung"), CoolStringTool.getFormattedAndCorrectedValue(resultVorPeriode.get("hmzist"), false), CoolStringTool.getFormattedAndCorrectedValue(resultVorPeriode.get("nfl"), false), CoolStringTool.getFormattedAndCorrectedValue(resultVorPeriode.get("leerfl"), false)));
-								}
-								else
-								{
-									mailtext.append(Tr.t("diffRow", mylang, "", "", "", "-", "-", "-"));
-								}
-							}
-							else
-							{
-								mailtext.append(Tr.t("diffRow", mylang, "", "", "", "-", "-", "-"));
-							}
-
-							// Hier noch eine Differenzzeile einfuegen
-							String diff = Tr.t("diff", mylang);
-
-							diffHmzist = CoolStringTool.getFormattedAndCorrectedValue(val1.subtract(val1vp).toString(), false);
-							diffNfl = CoolStringTool.getFormattedAndCorrectedValue(val2.subtract(val2vp).toString(), false);
-							diffLeerfl = CoolStringTool.getFormattedAndCorrectedValue(val3.subtract(val3vp).toString(), false);
-
-							mailtext.append(Tr.t("diffRow", mylang, diff, "", "", diffHmzist, diffNfl, diffLeerfl));
-							// Leerzeile einfuegen
-							mailtext.append(Tr.t("diffRow", mylang, "", "", "", "", "", ""));
-						}
-
-						boolean sendmailonlyonchange = this.getBoolean("var.sendmailonlyonchange", true);
-						if(diffHmzist.equals("0") && diffNfl.equals("0") && diffLeerfl.equals("0") && sendmailonlyonchange)
-						{
-							// Zeile nicht hinzufuegen, weil keine Aenderung vorhanden!
-						}
-						else
-						{
-							mailinglistKennwerteNachNutzung.put(mailAndName, mailtext.toString());
-						}
-					}
-
-				}
-			}
-		}
-		catch(Exception ex)
-		{
-			debug.error(ex);
-		}
+		getReportService().generatePeriodenvergleich(oid_haus, azl, 
+			(key, value) -> mailinglistKennwerteNachNutzung.put(key, value),
+			(key) -> mailinglistKennwerteNachNutzung.get(key),
+			(key) -> mailinglistKennwerteNachNutzung.containsKey(key),
+			() -> mylang,
+			(hausOid) -> getAssetmanagerMailadressFromObject(hausOid),
+			() -> getBoolean("var.sendmailonlyonchange", true));
 	}
 
 	/**
@@ -11919,14 +11367,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private String getJavascriptTopmatcherString(TopList top_list)
 	{
-		StringBuffer scriptString = new StringBuffer();
-		scriptString.append("<script type=\"text/javascript\">\n");
-		scriptString.append("try {\n");
-		scriptString.append("	var toplistjson=jQuery.parseJSON('" + top_list.toJSON(session) + "')\n");
-		scriptString.append("console.log('parsing json'); generateToplistSelectors(toplistjson);\n");
-		scriptString.append("} catch(e) {}\n");
-		scriptString.append("</script>\n");
-		return scriptString.toString();
+		return getReportService().getJavascriptTopmatcherString(top_list);
 	}
 
 	/**
@@ -11977,20 +11418,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private String getVarArg(String argName)
 	{
-		String value = this.getString("var." + argName);
-		if(value == null || value.equals(""))
-		{
-			value = this.getString("arg." + argName);
-		}
-		if((value == null || value.equals("")) && session != null)
-		{
-			value = session.getString("arg.oid" + this.getString("id").trim() + "." + argName);
-		}
-		if((value == null || value.equals("")) && session != null)
-		{
-			value = session.getString("arg.oid" + this.volatile_id + "." + argName);
-		}
-		return value;
+		return getUtilityService().getVarArg(argName, this);
 	}
 
 	/**
@@ -12846,23 +12274,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private String formatString(String value)
 	{
-		try
-		{
-			DecimalFormat df = new DecimalFormat("#,##0.00", symbolsDE_DE);
-			if(value.contains("\\.") && value.contains(","))
-			{
-				value = value.replaceAll("\\.", "");
-			}
-
-			value = value.replaceAll(",", ".");
-
-			String result = df.format(Double.parseDouble(value));
-			return result;
-		}
-		catch(Exception e)
-		{
-			return value;
-		}
+		return getReportService().formatString(value, symbolsDE_DE);
 	}
 
 	/**
@@ -12878,158 +12290,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private Hashtable<String, String> getAblaufendeVertraegeForAssetmanager(Calendar startDatum, Calendar endDatum, String assetmanager)
 	{
-
-		Hashtable<String, String> ablaufendevertraege = new Hashtable<>();
-
-		try
-		{
-			Vector<Hashtable<String, String>> res = new Vector<Hashtable<String, String>>();
-
-			ArgsHelper argsHelper = new ArgsHelper();
-
-			argsHelper.setAdvancedFields(true);
-			argsHelper.setMainTemplateType("CIMS.top");
-			argsHelper.addTemplateType("REVtops", "CIMS.haus");
-			argsHelper.addTemplateType("REVtops_assetmanager", "ICRScrm.assetmanager");
-
-			argsHelper.addCondition("REVtops_assetmanager_name", assetmanager.substring(assetmanager.indexOf(";") + 1));
-			argsHelper.addDomainCondition(session);
-			argsHelper.addWhere("ET0.mietvertragbis <= CONVERT(datetime, '" + eDate.stringFromDate(endDatum.getTime()) + "', 104) AND ET0.mietvertragbis >= CONVERT(datetime, '" + eDate.stringFromDate(startDatum.getTime()) + "', 104) AND ET0.status='1'");
-
-			argsHelper.addField("ID", "oid");
-			argsHelper.addField("DOB.name", "topname");
-			argsHelper.addField("REVtops_name", "adresse");
-			argsHelper.addField("REVtops_identadresse1", "sapnummer");
-			argsHelper.addField("REVtops_identadresse5", "senummer");
-			argsHelper.addField("ET0.vertragid");
-			argsHelper.addField("ET0.mieter");
-			argsHelper.addField("ET0.istmietepm/100.", "istmietepm");
-			argsHelper.addField("ET0.mietvertragbis");
-
-			if(null == DAInst)
-			{
-				net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
-				DAInst = conn.getDataAgent();
-			}
-
-			QueryResult qr = DAInst.queryObjectWithResult(argsHelper.getArgs());
-			res = qr.getResult();
-
-			if(res != null && res.size() > 0)
-			{
-				StringBuffer resultLines = new StringBuffer();
-
-				for(int i = 0; i < res.size(); i++)
-				{
-					Hashtable<String, String> row = res.get(i);
-
-					String oid = row.get("oid");
-					String topname = row.get("topname");
-					String adresse = row.get("adresse");
-					String sapnummer = row.get("sapnummer");
-					String senummer = row.get("senummer");
-					String vertragid = row.get("vertragid");
-					String mieter = row.get("mieter");
-
-					String istmietepm = row.get("istmietepm");
-					istmietepm = formatString(istmietepm);
-
-					String mietvertragbis = row.get("mietvertragbis");
-					if(mietvertragbis != null && mietvertragbis.contains(" "))
-					{
-						mietvertragbis = mietvertragbis.substring(0, mietvertragbis.indexOf(" ")).trim();
-					}
-
-					String topurl = CoolStringTool.buildLink(oid, "SHOW", "", topname, "", "_blank", "ajaxLink redlink", global, session);
-
-					String line = sapnummer + " " + adresse + " " + topurl + ", Vertragsnummer: " + vertragid + ", Mieter: <b>" + mieter + "</b>, Miete p.M.: " + istmietepm + "&euro; Mietvertragsende: <b>" + mietvertragbis + "</b><br><br>";
-
-					resultLines.append(line);
-				}
-
-				if(resultLines.toString().length() > 0)
-				{
-					StringBuffer salutation = new StringBuffer();
-
-					salutation.append("Sehr geehrte(r) " + assetmanager.substring(assetmanager.indexOf(";") + 1) + "!");
-					salutation.append("<br>");
-					salutation.append("<br>");
-					salutation.append("Die folgenden Verträge laufen in den nächsten 6 Monaten ab:");
-					salutation.append("<br>");
-					salutation.append("<br>");
-					salutation.append(resultLines.toString());
-					salutation.append("<br>");
-					salutation.append("<br>");
-					salutation.append("Sollte eine Verlängerung oder Wiedervermietung geplant sein, ersuchen wir um <b>rechtzeitige Erfassung im SAP</b> bis zum Monatsletzten des Vormonats, um den korrekten Datenstand im PMS abbilden zu können.");
-					salutation.append("<br>");
-					salutation.append("<br>");
-					salutation.append("Eine verzögerte Erfassung kann in einer höheren Leerstandsquote resultieren!");
-					salutation.append("<br>");
-					salutation.append("<br>");
-
-					if(assetmanagerAndIDs == null || assetmanagerAndIDs.size() == 0)
-					{
-						assetmanagerAndIDs = getAllAssetmanagerAndIds(session);
-					}
-
-					String dynurl = (String)CfgSingleton.getInstance().get("DYNAMIC_URLPATH", session, "dynamicurlpath");
-					if(null == dynurl)
-					{
-						debug.error(this, "cannot read DYNAMIC_URLPATH!");
-						dynurl = "/NA";
-					}
-
-					String sessid = session.getString("SESSIONID");
-					String linkClass = "ajaxLink";
-					String linkTarget = "_blank";
-					String url = dynurl + "?OID=DIRECT_ICRS.reports.report&reporttemplate=ICRS.reports.icrsare.auslaufendevertraegerepare";
-
-					if(assetmanagerAndIDs.containsKey(assetmanager.substring(assetmanager.indexOf(";") + 1)))
-					{
-						url += "&addfilterpreselectedvalues=queryassetmanager_ID=" + assetmanagerAndIDs.get(assetmanager.substring(assetmanager.indexOf(";") + 1));
-					}
-
-					url += "&VIEW=SHOW&wrapper=NO";
-					String encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
-					StringBuffer urlSB = new StringBuffer();
-					urlSB.append("<a href=\"");
-					urlSB.append(CoolWebTool.getUsedDomain(session));
-					urlSB.append(dynurl);
-					urlSB.append("?OID=" + CfgSingleton.getHijaxTarget(session) + "&contenturl=");
-					urlSB.append(encodedUrl);
-					urlSB.append("&FLAVOUR=");
-					urlSB.append(flavour);
-					urlSB.append("&ESSENCEID=");
-					urlSB.append(sessid);
-					urlSB.append("\" ");
-					if(null != linkClass && linkClass.trim().length() > 0)
-					{
-						urlSB.append(" class=\"" + linkClass + "\" ");
-					}
-					if(null != linkTarget && linkTarget.trim().length() > 0)
-					{
-						urlSB.append(" target= \"" + linkTarget + "\" ");
-					}
-					urlSB.append(">");
-					urlSB.append("hier");
-					urlSB.append("</a>");
-
-					salutation.append("Zur Abfrage der aktuell ablaufenden Mietverträge für Ihr Teilportfolio klicken Sie bitte " + urlSB + ".");
-
-					salutation.append("<br>");
-
-					ablaufendevertraege.put(assetmanager, salutation.toString());
-				}
-
-			}
-		}
-		catch(Exception e)
-		{
-			BugMe.getInstance().log(e);
-		}
-
-		return ablaufendevertraege;
-
+		return getUtilityService().getAblaufendeVertraegeForAssetmanager(startDatum, endDatum, assetmanager);
 	}
 
 	/**
@@ -13561,22 +12822,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public String getLanguage()
 	{
-		if(mylang == null || mylang.equals(""))
-		{
-			if(session != null)
-			{
-				mylang = session.getString("language").trim();
-			}
-			else
-			{
-				mylang = "";
-			}
-		}
-		if(mylang.equalsIgnoreCase("DE"))
-		{
-			mylang = "";
-		}
-		return mylang;
+		return getUtilityService().getLanguage();
 	}
 
 	/**
@@ -13619,15 +12865,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public void fixFileLink()
 	{
-		// file is a reserved word in mysql so cannot be exposed ... therefore this workaround
-		if(!getString("var.datei").equals(getString("var.file")))
-		{
-			set("var.datei", getString("var.file"));
-		}
-		if(!getString("var.edatei").equals(getString("var.efile")))
-		{
-			set("var.edatei", getString("var.efile"));
-		}
+		getUtilityService().fixFileLink(this);
 	}
 
 	/**
@@ -13655,40 +12893,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private void getHausverwaltungFromHausOid(String oid_haus)
 	{
-		try
+		String result = getUtilityService().getHausverwaltungFromHausOid(oid_haus);
+		if(result != null)
 		{
-			Vector<Hashtable<String, String>> res = new Vector<Hashtable<String, String>>();
-
-			ArgsHelper argsHelper = new ArgsHelper();
-			argsHelper.setMainTemplateType("CIMS.haus");
-			argsHelper.addTemplateType("hausverwaltungneu", "ICRScrm.firma");
-			argsHelper.setAdvancedFields(true);
-
-			argsHelper.addCondition("ID", oid_haus);
-			argsHelper.addDomainCondition(session);
-			argsHelper.addField("ID");
-			argsHelper.addField("hausverwaltungneu_name", "hausverwaltung");
-
-			// new Connector Class
-			if(null == DAInst)
-			{
-				net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
-				DAInst = conn.getDataAgent();
-			}
-
-			QueryResult qr = DAInst.queryObjectWithResult(argsHelper.getArgs());
-			res = qr.getResult();
-
-			if(res != null && res.size() == 1)
-			{
-				Hashtable<String, String> row = res.get(0);
-				String hausverwaltung = row.get("hausverwaltung");
-				this.hausverwaltung = hausverwaltung;
-			}
-		}
-		catch(Exception e)
-		{
-			BugMe.getInstance().error(e);
+			this.hausverwaltung = result;
 		}
 	}
 
@@ -13703,92 +12911,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public String createZZJsonReply(String status, String message, org.json.simple.JSONArray zl_sel_json, org.json.simple.JSONArray el_sel_json)
 	{
-		// TODO Auto-generated catch block
-		org.json.simple.JSONObject reply = new org.json.simple.JSONObject();
-		try
-		{
-			reply.put("status", status);
-			reply.put("message", message);
-			if(null != zl_sel_json)
-			{
-				reply.put("rentrollss", zl_sel_json);
-			}
-			if(null != el_sel_json)
-			{
-				reply.put("ownerslists", el_sel_json);
-			}
-			reply.put("file", getString("var.file"));
-			reply.put("efile", getString("var.efile"));
-			reply.put("datei", getString("var.datei"));
-			reply.put("edatei", getString("var.edatei"));
-			reply.put("rentrollimportaftersale", getString("var.rentrollimportaftersale"));
-			reply.put("filepath", getString("var.filepath"));
-			reply.put("filepathbackup", getString("var.filepathbackup"));
-			reply.put("name", getString("var.name"));
-			reply.put("nameEN", getString("var.nameEN"));
-			reply.put("objektname", getString("var.objektname"));
-			reply.put("text", getString("var.text"));
-			reply.put("vermietungtopuebeschreibtzinsliste", getString("var.vermietungtopuebeschreibtzinsliste"));
-			reply.put("vermietungtopuebeschreibtzinslistemonate", getString("var.vermietungtopuebeschreibtzinslistemonate"));
-			reply.put("vermietungtopuebeschreibtzinslisteaction", getString("var.vermietungtopuebeschreibtzinslisteaction"));
-			reply.put("resultcode", getString("var.resultcode"));
-			reply.put("errorcode", getString("var.errorcode"));
-			reply.put("errorcodetxt", getString("var.errorcodetxt"));
-			reply.put("zlstatus", getString("var.zlstatus"));
-			reply.put("selectedkunde", getString("var.selectedkunde"));
-			reply.put("jahr", getString("var.jahr"));
-			reply.put("email", getString("var.email"));
-			reply.put("mailtext", getString("var.mailtext"));
-			reply.put("wertaenderung", getString("var.wertaenderung"));
-			reply.put("assetmanagerinfo", getString("var.assetmanagerinfo"));
-			reply.put("sendmailonlyonchange", getString("var.sendmailonlyonchange"));
-			reply.put("periodenvergleich", getString("var.periodenvergleich"));
-			reply.put("leerstandsmail", getString("var.leerstandsmail"));
-			reply.put("ablaufendevetraegemail", getString("var.ablaufendevetraegemail"));
-			reply.put("altezinszeilenloeschen", getString("var.altezinszeilenloeschen"));
-			reply.put("topnamenneusetzten", getString("var.topnamenneusetzten"));
-			reply.put("quellsystem", getString("var.quellsystem"));
-			reply.put("zinslistendatum", getString("var.zinslistendatum"));
-			reply.put("topoanpassung", getString("var.topoanpassung"));
-			reply.put("ccemail", getString("var.ccemail"));
-			reply.put("monat", getString("var.monat"));
-			reply.put("tag", getString("var.tag"));
-			reply.put("zinslistenindex", getString("var.zinslistenindex"));
-			reply.put("eigentuemerlistenindex", getString("var.eigentuemerlistenindex"));
-			reply.put("land", getString("var.land"));
-			reply.put("ort", getString("var.ort"));
-			reply.put("adresse", getString("var.adresse"));
-			reply.put("identadresse5", getString("var.identadresse5"));
-			reply.put("importstatus", getString("var.importstatus"));
-			reply.put("hausverwaltung", getString("var.hausverwaltung"));
-			reply.put("hausverwalter", getString("var.hausverwalter"));
-			reply.put("betreuer", getString("var.betreuer"));
-			reply.put("duration", getString("var.duration"));
-			reply.put("filename", getString("var.filename"));
-			reply.put("nighthour", getString("var.nighthour"));
-			reply.put("nightminute", getString("var.nightminute"));
-			reply.put("width", getString("var.width"));
-			reply.put("jahrvon", getString("var.jahrvon"));
-			reply.put("monatvon", getString("var.monatvon"));
-			reply.put("encoding", getString("var.encoding"));
-			reply.put("statusformissingunit", getString("var.statusformissingunit"));
-			reply.put("topmatcherselector", getString("var.topmatcherselector"));
-			reply.put("ignorealleasyerros", getString("var.ignorealleasyerros"));
-			reply.put("importsperrebeidatenfreigabe", getString("var.importsperrebeidatenfreigabe"));
-
-			reply.put("gridimport", getString("var.gridimport"));
-			reply.put("starttime", getString("var.starttime"));
-			reply.put("endtime", getString("var.endtime"));
-			reply.put("runtime", getString("var.runtime"));
-			reply.put("checkexistingrentroll", getString("var.checkexistingrentroll"));
-			reply.put("zltypename", getString("var.zltypename"));
-		}
-		catch(Exception e1)
-		{
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		return reply.toString();
+		return getReportService().createZZJsonReply(status, message, zl_sel_json, el_sel_json, this);
 	}
 
 	/**
@@ -13802,28 +12925,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public String createRentRollObjectSelectDgd(org.json.simple.JSONArray zl_sel_json)
 	{
-		String myLang = session.getString("language");
-		String myId = getId();
-
-		String title = Tr.t("textRentRollImport", myLang);
-		DgdJson.Dgd dgd = DgdJson.DgdFactory.dgd(myId, title, "");
-		DgdJson.FieldTab tab = DgdJson.TabFactory.fieldTab("import", title);
-		List<DgdJson.FieldGroup> fieldgroups = new ArrayList<>();
-		List<DgdJson.Field> fields = new ArrayList<>();
-
-		if(zl_sel_json != null)
-		{
-			String fieldId = "zinslistenindex";
-			fields.add(DgdJson.FieldFactory.selector(fieldId, Tr.t("textRentRoll", myLang), myId + "__" + fieldId, "1", zl_sel_json, ""));
-		}
-		fieldgroups.add(DgdJson.FieldGroupFactory.group("importobjectgroup", Tr.t("textObjectDataImport", myLang)).addAll(fields));
-
-		dgd.addTab(tab.addAll(fieldgroups));
-		dgd.addButton(DgdJson.ButtonFactory.button(Tr.t("textButonCancel", myLang), "ghost", "arrow-left-line", "left", "left", DgdJson.ButtonFactory.action("back", "", "edit")));
-		dgd.addButton(DgdJson.ButtonFactory.button(Tr.t("textButtonContinue", myLang), "primary", "arrow-right-line", "right", "right", DgdJson.ButtonFactory.action("submit", "VIEW=READ", "edit")));
-
-		org.json.simple.JSONObject json = DgdJson.toJsonObject(dgd);
-		return json.toString();
+		return getReportService().createRentRollObjectSelectDgd(zl_sel_json, getId(), session.getString("language"));
 	}
 
 	/**
@@ -13852,64 +12954,44 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 	public String createRentRollImportErrorDgd(Zinsliste zl, String ignoreerrors, String rutablename, String pstablename)
 	{
-		String myLang = session.getString("language");
-		String myId = getId();
-		boolean isEnglish = StringUtils.equalsIgnoreCase(myLang, "EN");
-
-		String title = Tr.t("textRentRollImport", myLang);
-		DgdJson.Dgd dgd = DgdJson.DgdFactory.dgd(myId, title, "");
-		DgdJson.FieldTab tab = DgdJson.TabFactory.fieldTab("import", title);
-		List<DgdJson.FieldGroup> fieldgroups = new ArrayList<>();
-
-		String jsonERR = zl.getErrorsAsJsonDataTable(ignoreerrors, session);
-		if(StringUtils.isNotBlank(jsonERR))
+		return getReportService().createRentRollImportErrorDgd(zl, ignoreerrors, rutablename, pstablename, new Magic.IMS.ZLImport.ZinslistenReportService.DgdValueSetter()
 		{
-			String fieldId = "resulterrjson";
-			set("var." + fieldId, jsonERR);
-			set("var." + fieldId + ".VGUITYPE", "jsondatatable");
-			String displayname = isEnglish ? getString("var." + fieldId + ".DISPLAYNAMEEN") : getString("var." + fieldId + ".DISPLAYNAME");
-			DgdJson.Field dt = DgdJson.FieldFactory.jsonDataTable(fieldId, displayname, myId + "__" + fieldId, jsonERR, "");
-			fieldgroups.add(DgdJson.FieldGroupFactory.group("errorgroup", Tr.t("textRentRollError", myLang)).add(dt));
-		}
+			@Override
+			public void setValue(String key, String value)
+			{
+				set(key, value);
+			}
 
-		List<DgdJson.Field> fields = new ArrayList<>();
+			@Override
+			public String getValue(String key)
+			{
+				return getString(key);
+			}
 
-		if(oid_haus != null)
-		{
-			String url = "http://localhost:8080/icrsdemo/NA?OID=DIRECT_gui.ComboSlotSelector&MARKUPLANGUAGE=JSON&VIEW=VUE&replacetextalternativesfromselector=1&targetfield=" + myId + "__SLOT_mset_importobject&templatetype=CIMS.haus&selected=" + oid_haus;
-			fields.add(DgdJson.FieldFactory.autoList("importobject", "Objekt", myId + "__SLOT_mset_importobject", List.of(oid_haus), url, ""));
-		}
+			@Override
+			public String getId()
+			{
+				return UploadXLS5.this.getId();
+			}
 
-		String jsonZZ = zl.getZinszeilenAsJsonDataTable(session, rutablename);
-		if(StringUtils.isNotBlank(jsonZZ))
-		{
-			String fieldId = "resultzzjson";
-			set("var." + fieldId, jsonZZ);
-			set("var." + fieldId + ".VGUITYPE", "jsondatatable");
-			String displayname = isEnglish ? getString("var." + fieldId + ".DISPLAYNAMEEN") : getString("var." + fieldId + ".DISPLAYNAME");
-			fields.add(DgdJson.FieldFactory.jsonDataTable(fieldId, displayname, myId + "__" + fieldId, jsonZZ, ""));
-		}
-		String jsonSP = zl.getStellplaetzeAsJsonDataTable(session, pstablename);
-		if(StringUtils.isNotBlank(jsonSP))
-		{
-			String fieldId = "resultspjson";
+			@Override
+			public String getLanguage()
+			{
+				return session.getString("language");
+			}
 
-			set("var." + fieldId, jsonSP);
-			set("var." + fieldId + ".VGUITYPE", "jsondatatable");
-			String displayname = isEnglish ? getString("var." + fieldId + ".DISPLAYNAMEEN") : getString("var." + fieldId + ".DISPLAYNAME");
-			fields.add(DgdJson.FieldFactory.jsonDataTable(fieldId, displayname, myId + "__" + fieldId, jsonSP, ""));
-		}
-		fieldgroups.add(DgdJson.FieldGroupFactory.group("zzgroup", zl.haus).addAll(fields));
+			@Override
+			public String getOidHaus()
+			{
+				return oid_haus;
+			}
 
-		dgd.addTab(tab.addAll(fieldgroups));
-
-		dgd.addButton(DgdJson.ButtonFactory.button(Tr.t("textButonCancel", myLang), "ghost", "arrow-left-line", "left", "left", DgdJson.ButtonFactory.action("back", "", "edit")));
-		String additionalParams = "VIEW=READ&" + myId + "__zinslistenindex=&" + myId + "__eigentuemerlistenindex=&" + myId + "__fehlerabfrage=0&" + myId + "__createhaus=&" + myId + "__createnewtops=&" + myId + "__ignoreerrors=&" + myId + "__topoanpassung=1&" + myId + "__wertaenderung=";
-		dgd.addButton(DgdJson.ButtonFactory.button(Tr.t("textReimportRentRoll", myLang), "outline", "reset-right-fill", "left", "right", DgdJson.ButtonFactory.action("submit", additionalParams, "edit")));
-		dgd.addButton(DgdJson.ButtonFactory.button(Tr.t("textButtonContinueAnyway", myLang), "primary", "arrow-right-line", "right", "right", DgdJson.ButtonFactory.action("submit", "VIEW=READ&" + myId + "__fehlerabfrage=1", "edit")));
-		setDirty();
-		org.json.simple.JSONObject json = DgdJson.toJsonObject(dgd);
-		return json.toString();
+			@Override
+			public void setDirty()
+			{
+				UploadXLS5.this.setDirty();
+			}
+		});
 	}
 
 	/**
@@ -13934,36 +13016,43 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	public String createRentRollNewObjectDgd(Zinsliste zl, String ignoreerrors)
 	{
-		boolean isEnglish = StringUtils.equalsIgnoreCase(session.getString("language"), "EN");
-		String myId = getId();
-
-		String title = Tr.t("textRentRollImport", session.getString("language"));
-		DgdJson.Dgd dgd = DgdJson.DgdFactory.dgd(myId, title, "");
-		DgdJson.FieldTab tab = DgdJson.TabFactory.fieldTab("import", title);
-		List<DgdJson.FieldGroup> fieldgroups = new ArrayList<>();
-		List<DgdJson.Field> fields = new ArrayList<>();
-
-		String jsonERR = zl.getErrorsAsJsonDataTable(ignoreerrors, session);
-		if(StringUtils.isNotBlank(jsonERR))
+		return getReportService().createRentRollNewObjectDgd(zl, ignoreerrors, new Magic.IMS.ZLImport.ZinslistenReportService.DgdValueSetter()
 		{
-			String fieldId = "resulterrjson";
-			set("var." + fieldId, jsonERR);
-			String displayname = isEnglish ? getString("var." + fieldId + ".DISPLAYNAMEEN") : getString("var." + fieldId + ".DISPLAYNAME");
-			DgdJson.Field dt = DgdJson.FieldFactory.jsonDataTable(fieldId, displayname, myId + "__" + fieldId, jsonERR, "");
-			String fieldgroupDisplayname = isEnglish ? "There's something wrong with the file. Please check it." : "Probleme beim Import!";
-			fieldgroups.add(DgdJson.FieldGroupFactory.group("errorgroup", fieldgroupDisplayname).add(dt));
-		}
+			@Override
+			public void setValue(String key, String value)
+			{
+				set(key, value);
+			}
 
-		String displayname = isEnglish ? "Import object data" : "Objektdaten einspielen";
-		fieldgroups.add(DgdJson.FieldGroupFactory.group("importobjectgroup", displayname).addAll(fields));
+			@Override
+			public String getValue(String key)
+			{
+				return getString(key);
+			}
 
-		dgd.addTab(tab.addAll(fieldgroups));
+			@Override
+			public String getId()
+			{
+				return UploadXLS5.this.getId();
+			}
 
-		dgd.addButton(DgdJson.ButtonFactory.button(isEnglish ? "Cancel" : "Abbrechen", "ghost", "arrow-left-line", "left", "left", DgdJson.ButtonFactory.action("back", "", "edit")));
-		dgd.addButton(DgdJson.ButtonFactory.button(isEnglish ? "Continue" : "Weiter", "primary", "arrow-right-line", "left", "right", DgdJson.ButtonFactory.action("submit", "VIEW=READ", "edit")));
+			@Override
+			public String getLanguage()
+			{
+				return session.getString("language");
+			}
 
-		org.json.simple.JSONObject json = DgdJson.toJsonObject(dgd);
-		return json.toString();
+			@Override
+			public String getOidHaus()
+			{
+				return null;
+			}
+
+			@Override
+			public void setDirty()
+			{
+			}
+		});
 	}
 
 	/**

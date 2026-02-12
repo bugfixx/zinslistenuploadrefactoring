@@ -234,7 +234,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	transient private LinkedHashMap<String, Object> zinsZeilenCache = new LinkedHashMap<String, Object>(ZZ_CACHE_SIZE + 1, 0.75f, true) {
 		@Override
 		protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-			if(size() >= ZZ_CACHE_SIZE) {
+			if(size() > ZZ_CACHE_SIZE) {
 				if(debug != null) {
 					debug.log("Evicting oldest entry from zinsZeilenCache: " + eldest.getKey());
 				}
@@ -318,7 +318,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	transient protected LinkedHashMap<String, Object> mappingCache = new LinkedHashMap<String, Object>(MAPPING_CACHE_SIZE + 1, 0.75f, true) {
 		@Override
 		protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-			if(size() >= MAPPING_CACHE_SIZE) {
+			if(size() > MAPPING_CACHE_SIZE) {
 				if(debug != null) {
 					debug.log("Evicting oldest entry from mappingCache: " + eldest.getKey());
 				}
@@ -600,7 +600,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		mappingCache = new LinkedHashMap<String, Object>(MAPPING_CACHE_SIZE + 1, 0.75f, true) {
 			@Override
 			protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-				if(size() >= MAPPING_CACHE_SIZE) {
+				if(size() > MAPPING_CACHE_SIZE) {
 					if(debug != null) {
 						debug.log("Evicting oldest entry from mappingCache: " + eldest.getKey());
 					}

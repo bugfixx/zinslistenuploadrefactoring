@@ -16,7 +16,7 @@ transient private LinkedHashMap<String, Object> zinsZeilenCache =
     new LinkedHashMap<String, Object>(ZZ_CACHE_SIZE + 1, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-            if(size() >= ZZ_CACHE_SIZE) {
+            if(size() > ZZ_CACHE_SIZE) {
                 if(debug != null) {
                     debug.log("Evicting oldest entry from zinsZeilenCache: " + eldest.getKey());
                 }
@@ -33,7 +33,7 @@ transient protected LinkedHashMap<String, Object> mappingCache =
     new LinkedHashMap<String, Object>(MAPPING_CACHE_SIZE + 1, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-            if(size() >= MAPPING_CACHE_SIZE) {
+            if(size() > MAPPING_CACHE_SIZE) {
                 if(debug != null) {
                     debug.log("Evicting oldest entry from mappingCache: " + eldest.getKey());
                 }

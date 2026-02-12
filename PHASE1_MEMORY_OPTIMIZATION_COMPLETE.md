@@ -16,7 +16,7 @@ transient private LinkedHashMap<String, Object> zinsZeilenCache =
     new LinkedHashMap<String, Object>(ZZ_CACHE_SIZE + 1, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-            if(size() > ZZ_CACHE_SIZE) {
+            if(size() >= ZZ_CACHE_SIZE) {
                 if(debug != null) {
                     debug.log("Evicting oldest entry from zinsZeilenCache: " + eldest.getKey());
                 }
@@ -33,7 +33,7 @@ transient protected LinkedHashMap<String, Object> mappingCache =
     new LinkedHashMap<String, Object>(MAPPING_CACHE_SIZE + 1, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-            if(size() > MAPPING_CACHE_SIZE) {
+            if(size() >= MAPPING_CACHE_SIZE) {
                 if(debug != null) {
                     debug.log("Evicting oldest entry from mappingCache: " + eldest.getKey());
                 }
@@ -46,7 +46,7 @@ transient protected LinkedHashMap<String, Object> mappingCache =
 
 **topsCache (Line 284):**
 ```java
-transient HashMap<String, Object> topsCache = new HashMap<>(TOPS_CACHE_SIZE_OPTIMIZED, 0.9f);
+transient HashMap<String, Object> topsCache = new HashMap<>(TOPS_CACHE_INITIAL_CAPACITY, 0.9f);
 ```
 
 **lastZZ4Top (Line 286):**
@@ -58,7 +58,7 @@ transient HashMap<String, Calendar> lastZZ4Top = new HashMap<>();
 ```java
 private static final int ZZ_CACHE_SIZE = 500;           // ~50-100 MB RAM
 private static final int MAPPING_CACHE_SIZE = 200;      // ~10-20 MB RAM
-private static final int TOPS_CACHE_SIZE_OPTIMIZED = 512; // Optimal performance
+private static final int TOPS_CACHE_INITIAL_CAPACITY = 512; // Optimal performance
 ```
 
 #### Expected Impact
@@ -89,7 +89,6 @@ public void cleanup() {
         if(lastZZ4Top != null) {
             int size = lastZZ4Top.size();
             lastZZ4Top.clear();
-            lastZZ4Top = null;
             debug.log("Cleared lastZZ4Top: " + size + " entries freed");
         }
         
@@ -104,7 +103,6 @@ public void cleanup() {
         if(topsCache != null) {
             int size = topsCache.size();
             topsCache.clear();
-            topsCache = null;
             debug.log("Cleared topsCache: " + size + " entries freed");
         }
         
@@ -124,9 +122,6 @@ public void cleanup() {
         cachedcontent = null;
         
         debug.log("UploadXLS5 cleanup completed successfully");
-        
-        // Hint to GC that now is a good time (optional, doesn't force)
-        System.gc();
         
     } catch(Exception e) {
         debug.error("Error during UploadXLS5 cleanup", e);
@@ -234,10 +229,11 @@ private static final int MAPPING_CACHE_SIZE = 200;
 
 /**
  * Maximum number of tops entries to cache.
+ * Used for initial capacity optimization to reduce resizing overhead.
  * 
  * Current setting: 512 entries for optimal performance
  */
-private static final int TOPS_CACHE_SIZE_OPTIMIZED = 512;
+private static final int TOPS_CACHE_INITIAL_CAPACITY = 512;
 ```
 
 **Cleanup Method:**
@@ -384,14 +380,14 @@ Current settings are conservative. Adjust based on environment:
 ```java
 private static final int ZZ_CACHE_SIZE = 1000;      // Double capacity
 private static final int MAPPING_CACHE_SIZE = 500;  // 2.5x capacity
-private static final int TOPS_CACHE_SIZE_OPTIMIZED = 1024;
+private static final int TOPS_CACHE_INITIAL_CAPACITY = 1024;
 ```
 
 **For Low-Memory Environments (4-8 GB):**
 ```java
 private static final int ZZ_CACHE_SIZE = 250;       // Half capacity
 private static final int MAPPING_CACHE_SIZE = 100;  // Half capacity
-private static final int TOPS_CACHE_SIZE_OPTIMIZED = 256;
+private static final int TOPS_CACHE_INITIAL_CAPACITY = 256;
 ```
 
 **For Containerized Environments (Docker/K8s):**

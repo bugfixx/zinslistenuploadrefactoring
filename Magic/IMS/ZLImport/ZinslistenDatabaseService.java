@@ -142,7 +142,6 @@ public class ZinslistenDatabaseService
 			return new HashMap<>();
 		}
 
-		zinsZeilenCache = null;
 		zinsZeilenCache = new HashMap<>();
 		
 		if(null != monat && monat.startsWith("0"))

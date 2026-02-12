@@ -6311,6 +6311,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 	/**
 	 * Format mail content.
+	 * 
+	 * Note: Made public for access by ZinslistenMailService. This method is called
+	 * from the mail service to format mailing list content before sending.
 	 *
 	 * @param mailinglist
 	 *            the mailinglist

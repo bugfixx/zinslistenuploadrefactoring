@@ -514,7 +514,7 @@ public class ZinslistenMailService
 		// PKO - REMOVE - Only testing purpose
 		for(String mailadress : mailinglist.keySet())
 		{
-			debug.log("AM MAILS AN FOLGENDE ADRESSEN (sendMailToAssetmanager): " + mailadress);
+			System.out.println("AM MAILS AN FOLGENDE ADRESSEN (sendMailToAssetmanager): " + mailadress);
 			BugMe.getInstance("maillogfile").log("RRIMPORT> [" + parent.getName() + "] preparing rr mail to " + mailadress);
 
 		}

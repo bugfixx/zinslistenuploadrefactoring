@@ -182,10 +182,18 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	/** The userland. */
 	private String userland = "";
 
-	/** The cachedcontent. */
+	/**
+	 * The cachedcontent.
+	 * @deprecated Moved to ZinslistenFileService - kept for serialization compatibility
+	 */
+	@Deprecated
 	transient byte[] cachedcontent = null;
 
-	/** The cachedfile. */
+	/**
+	 * The cachedfile.
+	 * @deprecated Moved to ZinslistenFileService - kept for serialization compatibility
+	 */
+	@Deprecated
 	String cachedfile = "";
 
 	/** The cimslog. */
@@ -7851,102 +7859,22 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private Zinsliste getZinsliste(String file, int index, ArrayList<Object> quellsystemResult, String quellsystem)
 	{
-		Date d1 = new Date();
-
-		Zinsliste zl = null;
-
-		try
+		// Convert ArrayList<Object> to List<Map<String, Object>> for service call
+		List<Map<String, Object>> quellsystemList = null;
+		if(quellsystemResult != null && quellsystemResult.size() > 0)
 		{
-			// ACHTUNG NEU RK 2007 10 24 config files geflavoured!!!
-			String cfg_zlimport = (String)CfgSingleton.getInstance().get("ZINSLISTENIMPORTCONFIG");
-			cfg_zlimport = CoolStringTool.getFlavouredFilename(cfg_zlimport, session);
-			if(cfg_zlimport == null)
+			quellsystemList = new ArrayList<>();
+			for(Object obj : quellsystemResult)
 			{
-				set("var.errorcode", Tr.t("textNoZINSLISTENIMPORTCONFIG", session.getString("language")));
-				debug.error(this, "Keine ZINSLISTENIMPORTCONFIG gefunden");
-			}
-
-			String cfg_currencyconfig = (String)CfgSingleton.getInstance().get("ZINSLISTENCURRENCYCONFIG");
-			cfg_currencyconfig = CoolStringTool.getFlavouredFilename(cfg_currencyconfig, session);
-			if(cfg_currencyconfig == null)
-			{
-				set("var.errorcode", Tr.t("textNoZINSLISTENCURRENCYCONFIG", session.getString("language")));
-				debug.error(this, "Keine ZINSLISTENCURRENCYCONFIG gefunden");
-			}
-
-			zinslistenImport = new ZinslistenImport(cfg_zlimport, cfg_currencyconfig, debug, session);
-			zinslistenImport.setLanguage(session.getString("language"));
-			zinslistenImport.setEvaluateFormulas(evaluateFormulas);
-
-			if(quellsystemResult != null && quellsystemResult.size() > 0)
-			{
-				// SAP READ - here
-				zl = zinslistenImport.read(quellsystemResult, index, quellsystem);
-			}
-			else
-			{
-
-				if(FDAInst == null)
+				if(obj instanceof Map)
 				{
-					Connector conn = null;
-					conn = new Connector();
-					FDAInst = conn.getFileDataAgent();
-				}
-				HashMap<String, Object> fparams = FDAInst.getParams(file);
-
-				byte[] content = null;
-				if(file.equals(cachedfile) && null != cachedcontent)
-				{
-					System.err.println("ZLU2: FILECONTENT CACHED!");
-					content = cachedcontent;
-				}
-				else
-				{
-					System.err.println("ZLU2: READING FILE:" + file);
-					content = FDAInst.getObject(file);
-					cachedcontent = content;
-					cachedfile = file;
-
-				}
-
-				ByteArrayInputStream bis = new ByteArrayInputStream(content);
-				try
-				{
-					String thefilename = "";
-					String ftype = "";
-
-					if(null != fparams)
-					{
-						thefilename = (String)fparams.get("name");
-						ftype = (String)fparams.get("type");
-					}
-
-					zinslistenImport.extractDateFromFilename(thefilename);
-
-					// added: filename for date-extraction
-					zl = zinslistenImport.read(bis, thefilename, ftype, index);
-					System.err.println("Zinsliste gelesen" + zl.getInfoText());
-				}
-				catch(Exception e)
-				{
-					debug.error(e);
+					quellsystemList.add((Map<String, Object>)obj);
 				}
 			}
-			if(zl.getStatus() != 2)
-			{
-				zl.haus = TopoTool.fixeAdresse(zl.haus);
-			}
-			Date d2 = new Date();
-			System.out.println("Zinsliste lesen: " + (d2.getTime() - d1.getTime()) + " ms.");
-			return zl;
-
 		}
-		catch(Exception e)
-		{
-			debug.error(e);
-			debug.error(this, "NA FDAInst:" + e.getMessage());
-			return null;
-		}
+		
+		// Delegate to ZinslistenFileService
+		return getFileService().getZinsliste(file, index, quellsystemList, quellsystem);
 	}
 
 	/**
@@ -8145,6 +8073,43 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			utilityService = new Magic.IMS.ZLImport.ZinslistenUtilityService(session, global, DAInst, debug, getCrudService());
 		}
 		return utilityService;
+	}
+
+	/**
+	 * Gets the file service, initializing it lazily if needed.
+	 *
+	 * @return the file service
+	 */
+	private Magic.IMS.ZLImport.ZinslistenFileService getFileService()
+	{
+		if(fileService == null)
+		{
+			fileService = new Magic.IMS.ZLImport.ZinslistenFileService(
+				session, debug, FDAInst, evaluateFormulas, zlprotocol, xc, this);
+		}
+		return fileService;
+	}
+
+	/**
+	 * Gets cached file name.
+	 * @deprecated Delegates to ZinslistenFileService
+	 * @return the cached file name
+	 */
+	@Deprecated
+	public String getCachedFile()
+	{
+		return getFileService().getCachedFile();
+	}
+
+	/**
+	 * Gets cached content.
+	 * @deprecated Delegates to ZinslistenFileService
+	 * @return the cached content
+	 */
+	@Deprecated
+	public byte[] getCachedContent()
+	{
+		return getFileService().getCachedContent();
 	}
 
 	/**
@@ -9678,6 +9643,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 	/**
 	 * Read liste.
+	 * Delegates to ZinslistenFileService.
 	 *
 	 * @param file
 	 *            the file
@@ -9685,142 +9651,21 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private ArrayList<Object> readListe(String file)
 	{
-		ArrayList<Object> liste = new ArrayList<>();
-		// ---------------------------------------------
-		// LISTEN LESEN
-		// ---------------------------------------------
-		try
+		// Delegate to ZinslistenFileService
+		List<Map<String, Object>> result = getFileService().readListe(file);
+		
+		// Convert List<Map<String, Object>> to ArrayList<Object> for backward compatibility
+		if(result == null)
 		{
-			if(FDAInst == null)
-			{
-				Connector conn = null;
-				conn = new Connector();
-				FDAInst = conn.getFileDataAgent();
-			}
-			HashMap<String, Object> zlfparams = FDAInst.getParams(file);
-
-			byte[] content = null;
-			if(file.equals(cachedfile) && null != cachedcontent)
-			{
-				// System.err.println("ZLU2: FILECONTENT CACHED!");
-				content = cachedcontent;
-			}
-			else
-			{
-				// System.err.println("ZLU2: READING FILE:" + file);
-				content = FDAInst.getObject(file);
-				cachedcontent = content;
-				cachedfile = file;
-
-				// ACHTUNG NEU RK 2007 10 24 config files geflavoured!!!
-				String cfg_zlimport = (String)CfgSingleton.getInstance().get("ZINSLISTENIMPORTCONFIG");
-				cfg_zlimport = CoolStringTool.getFlavouredFilename(cfg_zlimport, session);
-				if(cfg_zlimport == null)
-				{
-					set("var.errorcode", Tr.t("textNoZINSLISTENIMPORTCONFIG", session.getString("language")));
-					debug.error(this, "Keine ZINSLISTENIMPORTCONFIG gefunden");
-				}
-
-				String cfg_currencyconfig = (String)CfgSingleton.getInstance().get("ZINSLISTENCURRENCYCONFIG");
-				cfg_currencyconfig = CoolStringTool.getFlavouredFilename(cfg_currencyconfig, session);
-				if(cfg_currencyconfig == null)
-				{
-					set("var.errorcode", Tr.t("textNoZINSLISTENCURRENCYCONFIG", session.getString("language")));
-					debug.error(this, "Keine ZINSLISTENCURRENCYCONFIG gefunden");
-				}
-				// ACHTUNG NEU RK 2007 10 24 config files geflavoured!!!
-
-				zinslistenImport = new ZinslistenImport(cfg_zlimport, cfg_currencyconfig, debug, session);
-				zinslistenImport.setLanguage(session.getString("language"));
-				zinslistenImport.setEvaluateFormulas(evaluateFormulas);
-
-			}
-
-			ByteArrayInputStream bis = new ByteArrayInputStream(content);
-
-			// get configfile
-
-			String ftype = (String)zlfparams.get("type");
-
-			if(ftype.equals("pdf") && zinslistenImport.getZlTypeConfig() != null)
-			{
-				ftype = zinslistenImport.getZlTypeConfig().getFileType();
-			}
-
-			String thefilename = "";
-			if(null != zlfparams)
-			{
-				thefilename = (String)zlfparams.get("name");
-			}
-			zinslistenImport.extractDateFromFilename(thefilename);
-
-			// added: filename for date-extraction
-			liste = zinslistenImport.getZinslistenInFile(bis, thefilename, ftype);
-			// Check if the file attached is without any data and provide message to the user
-			if(liste.size() == 0)
-			{
-				zlprotocol.appendHtmlErr("<h2>" + Tr.t("noDataMessage", session.getString("language")) + "</h2>");
-				session.set("CURRENT_VIEW", "ERRORQUEST");
-				set("var.importstop", "1");
-				set("var.errorcode", zlprotocol.getHtmlErr());
-				return null;
-			}
-
-			// Set the config
-			// maiordomus1000mieter
-			xc.getXMLConfig("hausverwaltung", zinslistenImport.getZlTypeConfig().getName() + "mieter");
-			try
-			{
-				Vector fehlerliste = zinslistenImport.errors;
-				if(fehlerliste.size() > 0)
-				{
-					for(int z = 0; z < fehlerliste.size(); z++)
-					{
-						// System.err.println("ZLU2: ERROR "+(String)fehlerliste.get(z));
-						zlprotocol.appendHtmlErr((String)fehlerliste.get(z) + "<br><br>\n");
-					}
-				}
-			}
-			catch(Exception xx)
-			{
-				debug.error(xx);
-			}
-			// wenn keine zinsliste - vector ist leer
-			// System.err.println("ZLU2: In "+file+" sind "+liste.size()+" Zinslisten.");
-		}
-		catch(Exception zir)
-		{
-			// GAR NICHT GUT
-			zlprotocol.appendHtmlErr("<h2>" + Tr.t("textDataNotReadable", session.getString("language")) + "</h2>");
-			zlprotocol.appendHtmlErr("<h2>" + Tr.t("textNoImport", session.getString("language")) + "</h2>");
-			session.set("CURRENT_VIEW", "ERRORQUEST");
-
-			set("var.importstop", "1");
-			set("var.errorcode", zir.getMessage());
-			set("var.errorcodetxt", zir.getMessage());
-			debug.error(zir);
-			debug.error("readListe in UploadXLS4:", zir);
-			this.set("dirty", "yes");
 			return null;
 		}
-
-		if(null == liste || 0 == liste.size())
-		{
-			// GAR NICHT GUT
-			zlprotocol.appendHtmlErr("<h2>" + Tr.t("textDataNotReadable", session.getString("language")) + "</h2>");
-			zlprotocol.appendHtmlErr("<h2>" + Tr.t("textNoImport", session.getString("language")) + "</h2>");
-			session.set("CURRENT_VIEW", "ERRORQUEST");
-			set("var.importstop", "1");
-			set("var.errorcode", zlprotocol.getHtmlErr());
-			set("var.errorcodetxt", Tr.t("textListUnreadable", session.getString("language")));
-			this.set("dirty", "yes");
-			return null;
-		}
-		return liste;
+		
+		return new ArrayList<Object>(result);
 	}
 
 	/**
 	 * Read liste.
+	 * Delegates to ZinslistenFileService.
 	 *
 	 * @param quellsystemResult
 	 *            the quellsystem result
@@ -9830,91 +9675,29 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private ArrayList<Object> readQuellsystemListe(ArrayList<Object> quellsystemResult, String quellsystem)
 	{
-		ArrayList<Object> liste = new ArrayList<>();
-		// ---------------------------------------------
-		// LISTEN LESEN
-		// ---------------------------------------------
-		try
+		// Convert ArrayList<Object> to List<Map<String, Object>> for service call
+		List<Map<String, Object>> quellsystemList = new ArrayList<>();
+		if(quellsystemResult != null)
 		{
-			if(FDAInst == null)
+			for(Object obj : quellsystemResult)
 			{
-				Connector conn = null;
-				conn = new Connector();
-				FDAInst = conn.getFileDataAgent();
-			}
-			String cfg_zlimport = (String)CfgSingleton.getInstance().get("ZINSLISTENIMPORTCONFIG");
-			cfg_zlimport = CoolStringTool.getFlavouredFilename(cfg_zlimport, session);
-			if(cfg_zlimport == null)
-			{
-				set("var.errorcode", Tr.t("textNoZINSLISTENIMPORTCONFIG", session.getString("language")));
-				debug.error(this, "Keine ZINSLISTENIMPORTCONFIG gefunden");
-			}
-
-			String cfg_currencyconfig = (String)CfgSingleton.getInstance().get("ZINSLISTENCURRENCYCONFIG");
-			cfg_currencyconfig = CoolStringTool.getFlavouredFilename(cfg_currencyconfig, session);
-			if(cfg_currencyconfig == null)
-			{
-				set("var.errorcode", Tr.t("textNoZINSLISTENCURRENCYCONFIG", session.getString("language")));
-				debug.error(this, "Keine ZINSLISTENCURRENCYCONFIG gefunden");
-			}
-
-			zinslistenImport = new ZinslistenImport(cfg_zlimport, cfg_currencyconfig, debug, session);
-			zinslistenImport.setLanguage(session.getString("language"));
-			zinslistenImport.setEvaluateFormulas(evaluateFormulas);
-
-			// added: filename for date-extraction
-			liste = zinslistenImport.getZinslistenInFile(null, "", "", quellsystemResult, quellsystem);
-
-			// Set the config
-			// maiordomus1000mieter
-			String zltypeName = zinslistenImport.getZlTypeConfig().getName();
-			this.set("var.zltypename", zltypeName);
-			xc.getXMLConfig("hausverwaltung", zltypeName + "mieter");
-
-			try
-			{
-				Vector fehlerliste = zinslistenImport.errors;
-				if(fehlerliste.size() > 0)
+				if(obj instanceof Map)
 				{
-					for(int z = 0; z < fehlerliste.size(); z++)
-					{
-						// System.err.println("ZLU2: ERROR "+(String)fehlerliste.get(z));
-						zlprotocol.appendHtmlErr((String)fehlerliste.get(z) + "<br><br>\n");
-					}
+					quellsystemList.add((Map<String, Object>)obj);
 				}
 			}
-			catch(Exception xx)
-			{
-				debug.error(xx);
-			}
-			// wenn keine zinsliste - vector ist leer
-			// System.err.println("ZLU2: In "+file+" sind "+liste.size()+" Zinslisten.");
 		}
-		catch(Exception zir)
+		
+		// Delegate to ZinslistenFileService
+		List<Map<String, Object>> result = getFileService().readQuellsystemListe(quellsystemList, quellsystem);
+		
+		// Convert List<Map<String, Object>> to ArrayList<Object> for backward compatibility
+		if(result == null)
 		{
-			// GAR NICHT GUT
-			debug.error(zir);
-			zlprotocol.appendHtmlErr("<h2>" + Tr.t("textDataNotReadable", session.getString("language")) + "</h2>");
-			zlprotocol.appendHtmlErr("<h2>" + Tr.t("textNoImport", session.getString("language")) + "</h2>");
-			session.set("CURRENT_VIEW", "ERRORQUEST");
-			set("var.errorcode", zir.getMessage());
-			set("var.errorcodetxt", zir.getMessage());
-			this.set("dirty", "yes");
 			return null;
 		}
-
-		if(null == liste || 0 == liste.size())
-		{
-			// GAR NICHT GUT
-			zlprotocol.appendHtmlErr("<h2>" + Tr.t("textDataNotReadable", session.getString("language")) + "</h2>");
-			zlprotocol.appendHtmlErr("<h2>" + Tr.t("textNoImport", session.getString("language")) + "</h2>");
-			session.set("CURRENT_VIEW", "ERRORQUEST");
-			set("var.errorcode", zlprotocol.getHtmlErr());
-			set("var.errorcodetxt", Tr.t("textListUnreadable", session.getString("language")));
-			this.set("dirty", "yes");
-			return null;
-		}
-		return liste;
+		
+		return new ArrayList<Object>(result);
 	}
 
 	/**

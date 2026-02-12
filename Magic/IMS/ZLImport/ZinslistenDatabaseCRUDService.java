@@ -5626,12 +5626,12 @@ public class ZinslistenDatabaseCRUDService {
 		return storeres;
 	}
 
-		protected void writeSlots(Hashtable vals, DynGenDataObj dgd)
+		private void writeSlots(Hashtable vals, DynGenDataObj dgd)
 	{
 		writeSlots(vals, dgd, false, false);
 	}
 
-		protected void writeSlots(Hashtable vals, DynGenDataObj dgd, boolean setOnlySingleValue, boolean createObject)
+		private void writeSlots(Hashtable vals, DynGenDataObj dgd, boolean setOnlySingleValue, boolean createObject)
 	{
 		String displayname = "";
 		if(parentObject.flavour.equals("icrsfred") || parentObject.flavour.equals("icrsare") || parentObject.flavour.equals("icrswi"))

@@ -198,9 +198,13 @@ public class ZinslistenValidationService
 	 * NOTE: Original implementation uses case-sensitive contains("leerstand"), 
 	 * while other terms use equalsIgnoreCase(). This is preserved for backward 
 	 * compatibility, though it may miss "LEERSTAND" or "Leerstand" variants.
+	 * 
+	 * NOTE: Original implementation does NOT check for null. Added null check
+	 * as defensive improvement to prevent NPE if called with null input.
+	 * Callers in UploadXLS5 sometimes check for null, sometimes don't.
 	 *
-	 * @param actualmieter the mieter string to check
-	 * @return true if it represents Leerstand
+	 * @param actualmieter the mieter string to check (should not be null)
+	 * @return true if it represents Leerstand, false if null or no match
 	 */
 	public boolean checkLeerstandString(String actualmieter)
 	{

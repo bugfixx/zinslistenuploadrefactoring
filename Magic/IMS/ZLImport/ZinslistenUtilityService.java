@@ -130,7 +130,7 @@ public class ZinslistenUtilityService {
      * Load top status values from template configuration.
      * Populates topStatusValues map with status codes and their text representations.
      */
-    private void getTopStatusValues() {
+    private void loadTopStatusValues() {
         if (topStatusValues == null || topStatusValues.size() == 0) {
             TemplateReader tr = TemplateReader.getInstance();
             DynGenDataObj dgdTopStatusSelector = tr.getFlavouredDGDForTemplate(
@@ -464,7 +464,7 @@ public class ZinslistenUtilityService {
     private String formatString(String value) {
         try {
             DecimalFormat df = new DecimalFormat("#,##0.00", symbolsDE_DE);
-            if (value.contains("\\.") && value.contains(",")) {
+            if (value.contains(".") && value.contains(",")) {
                 value = value.replaceAll("\\.", "");
             }
             
@@ -527,7 +527,7 @@ public class ZinslistenUtilityService {
      */
     public Map<String, String> getTopStatusValues() {
         if (topStatusValues == null || topStatusValues.isEmpty()) {
-            getTopStatusValues();
+            loadTopStatusValues();
         }
         return topStatusValues;
     }

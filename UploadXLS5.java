@@ -168,10 +168,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	
 	/**
 	 * Maximum number of tops entries to cache.
+	 * Used for initial capacity optimization to reduce resizing overhead.
 	 * 
 	 * Current setting: 512 entries for optimal performance
 	 */
-	private static final int TOPS_CACHE_SIZE_OPTIMIZED = 512;
+	private static final int TOPS_CACHE_INITIAL_CAPACITY = 512;
 
 	/** The valid. */
 	private boolean valid = true;
@@ -233,7 +234,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	transient private LinkedHashMap<String, Object> zinsZeilenCache = new LinkedHashMap<String, Object>(ZZ_CACHE_SIZE + 1, 0.75f, true) {
 		@Override
 		protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-			if(size() > ZZ_CACHE_SIZE) {
+			if(size() >= ZZ_CACHE_SIZE) {
 				if(debug != null) {
 					debug.log("Evicting oldest entry from zinsZeilenCache: " + eldest.getKey());
 				}
@@ -281,7 +282,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private int createzz = 0;
 
 	/** The tops cache with proper initial capacity. */
-	transient HashMap<String, Object> topsCache = new HashMap<>(TOPS_CACHE_SIZE_OPTIMIZED, 0.9f);
+	transient HashMap<String, Object> topsCache = new HashMap<>(TOPS_CACHE_INITIAL_CAPACITY, 0.9f);
 	/** contains the date of the last CIMS.zinszeile for each top */
 	transient HashMap<String, Calendar> lastZZ4Top = new HashMap<>();
 
@@ -317,7 +318,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	transient protected LinkedHashMap<String, Object> mappingCache = new LinkedHashMap<String, Object>(MAPPING_CACHE_SIZE + 1, 0.75f, true) {
 		@Override
 		protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-			if(size() > MAPPING_CACHE_SIZE) {
+			if(size() >= MAPPING_CACHE_SIZE) {
 				if(debug != null) {
 					debug.log("Evicting oldest entry from mappingCache: " + eldest.getKey());
 				}
@@ -538,7 +539,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		super();
 		if(null == topsCache)
 		{
-			topsCache = new HashMap<>(TOPS_CACHE_SIZE_OPTIMIZED, 0.9f);
+			topsCache = new HashMap<>(TOPS_CACHE_INITIAL_CAPACITY, 0.9f);
 		}
 
 		this.dao = new FredDAO();
@@ -599,7 +600,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		mappingCache = new LinkedHashMap<String, Object>(MAPPING_CACHE_SIZE + 1, 0.75f, true) {
 			@Override
 			protected boolean removeEldestEntry(java.util.Map.Entry<String, Object> eldest) {
-				if(size() > MAPPING_CACHE_SIZE) {
+				if(size() >= MAPPING_CACHE_SIZE) {
 					if(debug != null) {
 						debug.log("Evicting oldest entry from mappingCache: " + eldest.getKey());
 					}
@@ -7315,7 +7316,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				{
 					if(null == topsCache)
 					{
-						topsCache = new HashMap<>(TOPS_CACHE_SIZE_OPTIMIZED, 0.9f);
+						topsCache = new HashMap<>(TOPS_CACHE_INITIAL_CAPACITY, 0.9f);
 					}
 					if(!topsCache.containsKey(oids_top[i]))
 					{
@@ -8589,7 +8590,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			{
 				if(null == topsCache)
 				{
-					topsCache = new HashMap<>(TOPS_CACHE_SIZE_OPTIMIZED, 0.9f);
+					topsCache = new HashMap<>(TOPS_CACHE_INITIAL_CAPACITY, 0.9f);
 				}
 				if(!topsCache.containsKey(oids_top[i]))
 				{
@@ -12829,6 +12830,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 * 
 	 * IMPORTANT: Call this method when import processing is complete,
 	 * especially before processing multiple imports sequentially.
+	 * 
+	 * Note: Caches are cleared but not nulled, allowing the UploadXLS5
+	 * instance to be reused for subsequent imports if needed.
 	 */
 	public void cleanup() {
 		try {
@@ -12845,7 +12849,6 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			if(lastZZ4Top != null) {
 				int size = lastZZ4Top.size();
 				lastZZ4Top.clear();
-				lastZZ4Top = null;
 				debug.log("Cleared lastZZ4Top: " + size + " entries freed");
 			}
 			
@@ -12860,7 +12863,6 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			if(topsCache != null) {
 				int size = topsCache.size();
 				topsCache.clear();
-				topsCache = null;
 				debug.log("Cleared topsCache: " + size + " entries freed");
 			}
 			
@@ -12880,9 +12882,6 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			cachedcontent = null;
 			
 			debug.log("UploadXLS5 cleanup completed successfully");
-			
-			// Hint to GC that now is a good time (optional, doesn't force)
-			System.gc();
 			
 		} catch(Exception e) {
 			debug.error("Error during UploadXLS5 cleanup", e);

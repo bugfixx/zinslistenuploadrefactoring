@@ -178,10 +178,10 @@ public class ZinslistenMailService
 		{
 			if(to.contains(","))
 			{
-				String[] to_adresses = to.split(",");
-				for(int i = 0; i < to_adresses.length; i++)
+				String[] to_addresses_arr = to.split(",");
+				for(int i = 0; i < to_addresses_arr.length; i++)
 				{
-					String mail_to = to_adresses[i];
+					String mail_to = to_addresses_arr[i];
 					to_addresses.add(mail_to);
 				}
 
@@ -200,13 +200,6 @@ public class ZinslistenMailService
 
 		try
 		{
-			net.metamagix.essence.Agents.DataAgent DAInst = null;
-			if(DAInst == null)
-			{
-				Connector conn = null;
-				conn = new Connector();
-				DAInst = conn.getDataAgent();
-			}
 			// Zinsliste
 			String txt = (String)parent.get("var.name");
 			String fid = (String)parent.get("var.file");
@@ -488,8 +481,8 @@ public class ZinslistenMailService
 					MimeBodyPart mbp = new MimeBodyPart();
 					DataSource source = new net.metamagix.essence.GenData.StringBufferDataSource(zlprotocol.getCSVStringBuffer());
 					mbp.setDataHandler(new DataHandler(source));
-					mbp.setFileName("zinslistenaenderungen.txt");
-					mbp.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+					mbp.setFileName("zinslistenaenderungen.csv");
+					mbp.setHeader("Content-Type", "text/csv;charset=utf-8");
 					lpmw.addMimeBodyPart(mbp);
 				}
 				catch(Exception e)
@@ -700,7 +693,7 @@ public class ZinslistenMailService
 			{
 				for(int i = 0; i < bcc_addresses.size(); i++)
 				{
-					message.addRecipients(Message.RecipientType.TO, InternetAddress.parse(bcc_addresses.get(i).toString()));
+					message.addRecipients(Message.RecipientType.BCC, InternetAddress.parse(bcc_addresses.get(i).toString()));
 				}
 			}
 			// message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));

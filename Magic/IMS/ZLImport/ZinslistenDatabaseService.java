@@ -138,7 +138,7 @@ public class ZinslistenDatabaseService
 	{
 		if(null == topoids || topoids.length == 0)
 		{
-			log("Abfrgae nach Zinszeilen ohne angegebene Tops.");
+			log("Abfrage nach Zinszeilen ohne angegebene Tops.");
 			return new HashMap<>();
 		}
 
@@ -474,7 +474,7 @@ public class ZinslistenDatabaseService
 		{
 			for(int i = 0; i < res.size(); i++)
 			{
-				Map<String, String> h = res.get(0);
+				Map<String, String> h = res.get(i);
 
 				String mailAndName = "";
 

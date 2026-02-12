@@ -25,14 +25,16 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.Vector;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -139,7 +141,7 @@ import Magic.System.Login;
  * @author Peter Korbl, Randolph Kepplinger
  * @version 0.9 cleaned code
  */
-@SuppressWarnings({"unchecked", "rawtypes", "unused", "serial"})
+@SuppressWarnings({"unchecked", "rawtypes", "unused", "serial", "deprecation"})
 public class UploadXLS5 extends DynGenDataObj implements Process
 {
 
@@ -888,9 +890,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 			Date starttime = new Date();
 
-			StringBuilder good = new StringBuilder();
-			ArrayList<Object> tmpliste = null;
-			ArrayList<Object> quellsystemResult = null;
+			StringBuffer good = new StringBuffer();
+			Vector tmpliste = null;
+			Vector quellsystemResult = null;
 
 			// Hier den SAP import einklinken!!!!
 			if(sapconnection.equals("1") && quellsystem.equals("sapare") && file.length() == 0)
@@ -938,7 +940,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 				SwaggerQuery scc = new SwaggerQuery();
 
-				HashMap<String, String> parameters = new HashMap<>();
+				Hashtable<String, String> parameters = new Hashtable<>();
 				String year = "";
 				String month = "";
 				String day = "";
@@ -1004,7 +1006,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			{
 				SAPCSVQuery sapcsvquery = new SAPCSVQuery();
 
-				HashMap<String, String> parameters = new HashMap<>();
+				Hashtable<String, String> parameters = new Hashtable<>();
 
 				String fileWithPath = this.getString("var.filepath");
 				String fileWithPathBackup = this.getString("var.filepathbackup");
@@ -1214,16 +1216,16 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				}
 				return super.parse(templatecode, global, session);
 			}
-			ArrayList<Object> liste = new ArrayList<>();
-			HashMap<String, Object> eigentuemerhash = new HashMap<>();
+			Vector liste = new Vector();
+			Hashtable eigentuemerhash = new Hashtable();
 			for(int p = 0; p < tmpliste.size(); p++)
 			{
-				HashMap<String, Object> e = (HashMap<String, Object>)tmpliste.get(p);
+				Hashtable e = (Hashtable)tmpliste.elementAt(p);
 				String text = (String)e.get("text");
 				Integer index = (Integer)e.get("index");
 				if(text.indexOf("Mieterliste") >= 0)
 				{
-					liste.add(e);
+					liste.addElement(e);
 				}
 				else if(text.indexOf("Eigentümerliste") >= 0)
 				{
@@ -1236,20 +1238,22 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			zlprotocol.appendHtmlRes("<div id=\"datatablesmmx\" class='datatablesmmx'><div class='dataTablesDownloadButton' onclick=\"downloadCSVfile('datatableicrs','table_results')\"> </div><table class='display' id='datatableicrs' width='98%'>");
 			zlprotocol.appendHtmlRes("<thead><tr><th>" + Tr.t("textObject", session.getString("language")) + "</th><th>" + Tr.t("textResult", session.getString("language")) + "</th></tr></thead><tbody>");
 
-			HashMap<String, HashMap<String, HashMap<String, String>>> missingWEs = new HashMap<String, HashMap<String, HashMap<String, String>>>();
+			Hashtable<String, Hashtable<String, Hashtable<String, String>>> missingWEs = new Hashtable<String, Hashtable<String, Hashtable<String, String>>>();
 			if(quellsystem.equals("sapare") && file.length() == 0)
 			{
-				HashMap<String, HashMap<String, HashMap<String, String>>> alleWEsInBestand = getAlleWEsInBestand();
+				Hashtable<String, Hashtable<String, Hashtable<String, String>>> alleWEsInBestand = getAlleWEsInBestand();
 
-				for(String mailAndName : alleWEsInBestand.keySet())
+				Enumeration ek = alleWEsInBestand.keys();
+				while(ek.hasMoreElements())
 				{
-					HashMap<String, Object> row = alleWEsInBestand.get(mailAndName);
+					String mailAndName = (String)ek.nextElement();
+					Hashtable row = alleWEsInBestand.get(mailAndName);
 
 					boolean foundHaus = false;
 					for(int i = 0; i < liste.size(); i++)
 					{
 
-						HashMap<String, Object> e = (HashMap<String, Object>)liste.get(i);
+						Hashtable e = (Hashtable)liste.elementAt(i);
 						String identadresse1Zinsliste = String.valueOf(e.get("specialIdentification"));
 
 						if(row.containsKey(identadresse1Zinsliste) || row.containsKey(identadresse1Zinsliste.replace("  ", " ")) || row.containsKey(identadresse1Zinsliste.replace(" ", "  ")))
@@ -1276,12 +1280,12 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				resultSizeOfStoredObjects = 0;
 				String error2append = "";
 				java.util.Date start_time = new java.util.Date();
-				HashMap<String, Object> e = (HashMap<String, Object>)liste.get(p);
+				Hashtable e = (Hashtable)liste.elementAt(p);
 				String text = (String)e.get("text");
 				Integer index = (Integer)e.get("index");
 				String eigentuemertext = CoolStringTool.replaceStr(text, "Mieterliste", "Eigentümerliste");
 				Integer pose = (Integer)eigentuemerhash.get(eigentuemertext.toLowerCase());
-				HashMap<String, String> haeuserMitFehlern = new HashMap<String, String>();
+				Hashtable<String, String> haeuserMitFehlern = new Hashtable<String, String>();
 
 				// mieterliste?
 				azl = null;
@@ -1375,7 +1379,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 							Path path = Path.of(tmpDirectory + System.getProperty("file.separator") + file);
 							byte[] data = Files.readAllBytes(path);
 
-							HashMap<String, Object> fparams = new HashMap<>();
+							Hashtable fparams = new Hashtable();
 							fparams.put("size", "" + data.length);
 							fparams.put("paramname", "zinslistenfile");
 							fparams.put("name", file);
@@ -1693,12 +1697,12 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 									// GIBT'S DIE TOPS
 									boolean createtops = false;
-									HashMap<String, Object> allmytops = tq.getTopsForOID(oid_haus, null, session, DAInst);
+									Hashtable allmytops = tq.getTopsForOID(oid_haus, null, session, DAInst);
 
 									// mit bereinigten namen !!!
-									HashMap<String, Object> allmyinternaltops = TopoTool.getInternalTopsForTops(allmytops);
+									Hashtable allmyinternaltops = TopoTool.getInternalTopsForTops(allmytops);
 
-									HashMap<String, Object> alltopsmerged = new HashMap<>();
+									Hashtable alltopsmerged = new Hashtable();
 									alltopsmerged.putAll(allmytops);
 									alltopsmerged.putAll(allmyinternaltops);
 
@@ -1724,17 +1728,17 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 									}
 
-									HashMap<String, Object> newtops = new HashMap<>();
+									Hashtable newtops = new Hashtable();
 
 									int ntcount = 0;
 
-									HashMap<String, Object> tops_in_zl = new HashMap<>();
+									Hashtable tops_in_zl = new Hashtable();
 									String sapnummer = "";
 
 									// TOPS DURCHGEHEN
 									for(int j = 0; j < azl.zinszeilen.size(); j++)
 									{
-										HashMap<String, Object> ht = (HashMap<String, Object>)azl.zinszeilen.get(j);
+										Hashtable ht = (Hashtable)azl.zinszeilen.get(j);
 										String top = (String)ht.get("top");
 
 										TopElement te = null;
@@ -1827,7 +1831,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 									// STELLPLAETZE DURCHGEHEN
 									for(int j = 0; j < azl.stellplaetze.size(); j++)
 									{
-										HashMap<String, Object> ht = (HashMap<String, Object>)azl.stellplaetze.get(j);
+										Hashtable ht = (Hashtable)azl.stellplaetze.get(j);
 										String top = (String)ht.get("top");
 
 										TopElement te = null;
@@ -1903,7 +1907,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 									if(newtops.size() > 0)
 									{
 										log("Lege " + newtops.size() + " Mieteinheiten an.");
-										HashMap<String, Object> tres = storeObjectsJunked(newtops, session);
+										Hashtable tres = storeObjectsJunked(newtops, session);
 										if(tres != null)
 										{
 											addTopsToHaus(tres, oid_haus);
@@ -1917,7 +1921,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 									int missingzz = 0;
 
-									HashMap<String, Object> allmytopsAKTIV = null;
+									Hashtable allmytopsAKTIV = null;
 									if(xc != null)
 									{
 										String zltypeName = zinslistenImport.getZlTypeConfig().getName();
@@ -1946,8 +1950,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 											"2"}, session, DAInst);
 									}
 
-									for(String topname : allmytopsAKTIV.keySet())
-					{
+									Enumeration ek = allmytopsAKTIV.keys();
+									while(ek.hasMoreElements())
+									{
+										String topname = (String)ek.nextElement();
 										// kommt das top in der zinszeile vor?
 										String unifiedTopName = TopoTool.unifyTop(topname);
 										String topEdvNr = "";
@@ -2020,7 +2026,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 												net.metamagix.essence.Agents.Connector conn = new net.metamagix.essence.Agents.Connector();
 												DAInst = conn.getDataAgent();
 											}
-											HashMap<String, Object> zz2store = zinszeilenAnlegen(azl, top_list, oid_haus, false);
+											Hashtable zz2store = zinszeilenAnlegen(azl, top_list, oid_haus, false);
 											importerror = false;
 
 											Date d1a = new Date();
@@ -2088,7 +2094,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 												if(mailinglist.containsKey(mailAndName))
 												{
 													// get email and append link
-													StringBuilder mailtext = new StringBuilder();
+													StringBuffer mailtext = new StringBuffer();
 													mailtext.append(mailinglist.get(mailAndName));
 
 													if(createplainstellplaetze && createplaintops)
@@ -2109,7 +2115,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 												else
 												{
 													// add email and headers then append link
-													StringBuilder mailtext = new StringBuilder();
+													StringBuffer mailtext = new StringBuffer();
 
 													if(createplainstellplaetze && createplaintops)
 													{
@@ -2173,7 +2179,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 											if(mailinglist.containsKey(mailAndName))
 											{
 												// get email and append link
-												StringBuilder mailtext = new StringBuilder();
+												StringBuffer mailtext = new StringBuffer();
 												mailtext.append(mailinglist.get(mailAndName));
 												String myurl = dynurl + "?OID=" + oid_haus;
 												if(redirectobj.length() > 0)
@@ -2189,7 +2195,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 											else
 											{
 												// add email and headers then append link
-												StringBuilder mailtext = new StringBuilder();
+												StringBuffer mailtext = new StringBuffer();
 												String myurl = dynurl + "?OID=" + oid_haus;
 												if(redirectobj.length() > 0)
 												{
@@ -2239,7 +2245,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 											if(mailinglist.containsKey(mailAndName))
 											{
 												// get email and append link
-												StringBuilder mailtext = new StringBuilder();
+												StringBuffer mailtext = new StringBuffer();
 												mailtext.append(mailinglist.get(mailAndName));
 												mailtext.append("<br>" + azl.edvNr + " " + azl.haus + " " + azl.plz + " <font color=\"#aa0000\"><a class=\"redlink\" href=\"" + urlError + "\" target=\"_blank\">" + Tr.t("textEasyErrors", session.getString("language")) + "</a></font>");
 												mailinglist.put(mailAndName, mailtext.toString());
@@ -2247,7 +2253,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 											else
 											{
 												// add email and headers then append link
-												StringBuilder mailtext = new StringBuilder();
+												StringBuffer mailtext = new StringBuffer();
 												// mailtext.append("<div id=\"datatablesmmx\"><table class='display' id='datatableicrs' width='98%'>");
 												mailtext.append("<br>" + azl.edvNr + " " + azl.haus + " " + azl.plz + " <font color=\"#aa0000\"><a class=\"redlink\" href=\"" + urlError + "\" target=\"_blank\">" + Tr.t("textEasyErrors", session.getString("language")) + "</a></font>");
 												mailinglist.put(mailAndName, mailtext.toString());
@@ -2317,7 +2323,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					String[][] datapackage = dataPackage.data;
 					for(int i = 0; i < datapackage.length; i++)
 					{
-						StringBuilder buff = new StringBuilder();
+						StringBuffer buff = new StringBuffer();
 						for(int j = 0; j < datapackage[0].length; j++)
 						{
 							buff.append(datapackage[i][j]);
@@ -2525,7 +2531,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						try
 						{
 							// get email and append link
-							StringBuilder mailtext = new StringBuilder();
+							StringBuffer mailtext = new StringBuffer();
 							mailtext.append(mailinglist.get(mailAndName));
 
 							mailtext.append(mailLines[i] + "<br>");
@@ -2548,7 +2554,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						try
 						{
 							// add email and headers then append link
-							StringBuilder mailtext = new StringBuilder();
+							StringBuffer mailtext = new StringBuffer();
 							mailtext.append("<br><br>");
 
 							mailtext.append(mailLines[i] + "<br>");
@@ -2579,14 +2585,16 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						assetmanagerAndIDs = getAllAssetmanagerAndIds(session);
 					}
 
-					HashMap<String, String> oidAndArea = getOidAndAreaOfVacantRentrolls(session);
+					Hashtable<String, String> oidAndArea = getOidAndAreaOfVacantRentrolls(session);
 
-					for(String key : mailinglist.keySet())
+					Enumeration keys = mailinglist.keys();
+					while(keys.hasMoreElements())
 					{
+						String key = (String)keys.nextElement();
 						String value = mailinglist.get(key);
 
 						String[] lines = value.split("<br>");
-						StringBuilder newValue = new StringBuilder();
+						StringBuffer newValue = new StringBuffer();
 
 						for(int i = 0; i < lines.length; i++)
 						{
@@ -2613,7 +2621,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 						if(newValue.length() > 0)
 						{
-							StringBuilder salutation = new StringBuilder();
+							StringBuffer salutation = new StringBuffer();
 
 							salutation.append("Sehr geehrte(r) " + key.substring(key.indexOf(";") + 1) + "!");
 							salutation.append("<br>");
@@ -2640,7 +2648,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 							url += "&VIEW=SHOW&wrapper=NO";
 							String encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
-							StringBuilder urlSB = new StringBuilder();
+							StringBuffer urlSB = new StringBuffer();
 							urlSB.append("<a href=\"");
 							urlSB.append(CoolWebTool.getUsedDomain(session));
 							urlSB.append(dynurl);
@@ -2681,7 +2689,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					GregorianCalendar crecalendar = new GregorianCalendar();
 					crecalendar.setTime(now);
 
-					HashMap<String, String> newleerstandmailinglist = new HashMap<String, String>();
+					Hashtable<String, String> newleerstandmailinglist = new Hashtable<String, String>();
 
 					for(String key : leerstandmailinglist.keySet())
 					{
@@ -2693,12 +2701,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						String value = leerstandmailinglist.get(key);
 
 						// Add Mailverteiler to Mailinglist
-						HashMap<String, Object> mailverteiler = getMailverteilerFromAssetmanager(name);
+						Hashtable mailverteiler = getMailverteilerFromAssetmanager(name);
+						Enumeration mvkeys = mailverteiler.keys();
 						String verteileradressekey = "";
 						String newMailAdresses = mail;
-						for(String mvkey : mailverteiler.keySet())
+						while(mvkeys.hasMoreElements())
 						{
-							verteileradressekey = mvkey.toString().replaceAll(" ", "");
+							verteileradressekey = mvkeys.nextElement().toString().replaceAll(" ", "");
 							// mailinglistNew.put(verteileradressekey, value);
 							if(verteileradressekey.length() > 0 && !leerstandmailinglist.contains(verteileradressekey))
 							{
@@ -2748,11 +2757,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					endDatum.setTime(date);
 					endDatum.add(Calendar.MONTH, +6);
 
-					for(String key : mailinglist.keySet())
+					Enumeration keys = mailinglist.keys();
+					while(keys.hasMoreElements())
 					{
+						String key = (String)keys.nextElement();
 						String value = mailinglist.get(key);
 
-						HashMap<String, String> ablaufendevertraege = getAblaufendeVertraegeForAssetmanager(startDatum, endDatum, key);
+						Hashtable<String, String> ablaufendevertraege = getAblaufendeVertraegeForAssetmanager(startDatum, endDatum, key);
 						ablaufendevertraegemailinglist.putAll(ablaufendevertraege);
 					}
 
@@ -2761,7 +2772,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					GregorianCalendar crecalendar = new GregorianCalendar();
 					crecalendar.setTime(now);
 
-					HashMap<String, String> newablaufendevertraegemailinglist = new HashMap<String, String>();
+					Hashtable<String, String> newablaufendevertraegemailinglist = new Hashtable<String, String>();
 
 					for(String key : ablaufendevertraegemailinglist.keySet())
 					{
@@ -2773,12 +2784,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						String value = ablaufendevertraegemailinglist.get(key);
 
 						// Add Mailverteiler to Mailinglist
-						HashMap<String, Object> mailverteiler = getMailverteilerFromAssetmanager(name);
+						Hashtable mailverteiler = getMailverteilerFromAssetmanager(name);
+						Enumeration mvkeys = mailverteiler.keys();
 						String verteileradressekey = "";
 						String newMailAdresses = mail;
-						for(String mvkey : mailverteiler.keySet())
+						while(mvkeys.hasMoreElements())
 						{
-							verteileradressekey = mvkey.toString().replaceAll(" ", "");
+							verteileradressekey = mvkeys.nextElement().toString().replaceAll(" ", "");
 							// mailinglistNew.put(verteileradressekey, value);
 							if(verteileradressekey.length() > 0 && !newablaufendevertraegemailinglist.contains(verteileradressekey))
 							{
@@ -2805,8 +2817,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			// Add Ending Table to every Mail recipiant (Assetmanager)
 			if(mailinglist.size() > 0)
 			{
-				for(String key : mailinglist.keySet())
-					{
+				Enumeration keys = mailinglist.keys();
+				while(keys.hasMoreElements())
+				{
+					String key = (String)keys.nextElement();
 					String value = mailinglist.get(key);
 
 					// value = value + "</table></div><br><br><br>";
@@ -2817,7 +2831,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					for(String mailinglistKennwerteNachNutzungKey : mailinglistKennwerteNachNutzung.keySet())
 					{
 						// get email and append link
-						StringBuilder mailtext = new StringBuilder();
+						StringBuffer mailtext = new StringBuffer();
 						mailtext.append(mailinglistKennwerteNachNutzung.get(mailinglistKennwerteNachNutzungKey));
 						mailtext.append("</table><br><br><br>");
 						mailinglistKennwerteNachNutzung.put(mailinglistKennwerteNachNutzungKey, mailtext.toString());
@@ -2841,10 +2855,12 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			// if maillist > 0 then add salutaion to assetmanager mail and change key to mailadress
 			if(mailinglist.size() > 0)
 			{
-				HashMap<String, String> mailinglistNew = new HashMap<String, String>();
+				Hashtable<String, String> mailinglistNew = new Hashtable<String, String>();
 
-				for(String key : mailinglist.keySet())
-					{
+				Enumeration keys = mailinglist.keys();
+				while(keys.hasMoreElements())
+				{
+					String key = (String)keys.nextElement();
 					String value = mailinglist.get(key);
 
 					String mailAndName[] = key.split(";");
@@ -2854,17 +2870,19 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					String salutation = Tr.t("textSalutationAssetmanagerNotify", session.getString("language")) + " " + name + "<br><br>";
 					salutation = salutation + Tr.t("textAssetmanagerNotify", session.getString("language"));
 
-					StringBuilder missingWEsText = new StringBuilder();
+					StringBuffer missingWEsText = new StringBuffer();
 
 					if(missingWEs.containsKey(key))
 					{
 						// missingWEsText.append("<br>Folgende WEs fehlen im Datenload:<br>");
 
-						HashMap<String, HashMap<String, String>> h = missingWEs.get(key);
+						Hashtable<String, Hashtable<String, String>> h = missingWEs.get(key);
 
-						for(String key1 : h.keySet())
-					{
-							HashMap<String, Object> row = h.get(key1);
+						Enumeration keys1 = h.keys();
+						while(keys1.hasMoreElements())
+						{
+							String key1 = (String)keys1.nextElement();
+							Hashtable row = h.get(key1);
 							missingWEsText.append("<b>SE " + row.get("identadresse5") + " / " + row.get("wename") + " / " + row.get("plz") + " fehlt im SAP Import!</b><br>");
 						}
 					}
@@ -2880,13 +2898,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					mailinglistNew.put(mail, value);
 
 					// Add Mailverteiler to Mailinglist
-					HashMap<String, Object> mailverteiler = getMailverteilerFromAssetmanager(name);
-				// Enumeration converted to for-each loop
+					Hashtable mailverteiler = getMailverteilerFromAssetmanager(name);
+					Enumeration mvkeys = mailverteiler.keys();
 					String verteileradressekey = "";
 					String newMailAdresses = mail;
-					for(String mvkey : mailverteiler.keySet())
+					while(mvkeys.hasMoreElements())
 					{
-						verteileradressekey = mvkey.toString().replaceAll(" ", "");
+						verteileradressekey = mvkeys.nextElement().toString().replaceAll(" ", "");
 						// mailinglistNew.put(verteileradressekey, value);
 						if(verteileradressekey.length() > 0 && !newMailAdresses.contains(verteileradressekey))
 						{
@@ -2920,7 +2938,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 			String url = dynurl + "?OID=" + oidnew + "&VIEW=INFO&ESSENCEID=" + sessid;
 			String encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
-			StringBuilder urlSB = new StringBuilder();
+			StringBuffer urlSB = new StringBuffer();
 			urlSB.append("<a href=\"");
 			urlSB.append(CoolWebTool.getUsedDomain(session));
 			urlSB.append(dynurl);
@@ -3021,7 +3039,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 			LockingSingleton.getInstance().enter(lockname);
 
-			ArrayList<Object> quellsystemResult = null;
+			Vector quellsystemResult = null;
 
 			// Hier den SAP import einklinken!!!!
 			if(sapconnection.equals("1") && quellsystem.equals("sapare") && file.length() == 0)
@@ -3079,7 +3097,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 				SwaggerQuery scc = new SwaggerQuery();
 
-				HashMap<String, String> parameters = new HashMap<>();
+				Hashtable<String, String> parameters = new Hashtable<>();
 				String year = "";
 				String month = "";
 				String day = "";
@@ -3157,7 +3175,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			{
 				SAPCSVQuery sapcsvquery = new SAPCSVQuery();
 
-				HashMap<String, String> parameters = new HashMap<>();
+				Hashtable<String, String> parameters = new Hashtable<>();
 
 				quellsystemResult = sapcsvquery.getZinslistenQueryResult(parameters);
 
@@ -3274,7 +3292,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			}
 			super.set("dirty", "yes");
 
-			new HashMap<String, String>();
+			new Hashtable<String, String>();
 
 			// hat der user ein paar fehler zum ignorieren angeklickt????
 			String ignorefutureerrors = (String)this.get("var.ignoreerrors");
@@ -3355,7 +3373,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 				if(null == zlIndex)
 				{
-					ArrayList<Object> liste = null;
+					Vector liste = null;
 
 					if(sapconnection.equals("1") && (zlfile == null || zlfile.length() == 0))
 					{
@@ -3388,7 +3406,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					if(1 == liste.size())
 					{
 						// index holen
-						HashMap<String, Object> e = (HashMap<String, Object>)liste.get(0);
+						Hashtable e = (Hashtable)liste.elementAt(0);
 						try
 						{
 							zlIndex = (Integer)e.get("index");
@@ -3428,11 +3446,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						liste = VectorOfHashesSorter.sort(liste, "text");
 						// System.err.println("ZLU2: BUILDING SELECT!!!!!!!!!");
 						session.set("CURRENT_VIEW", "MULTI");
-						StringBuilder el_sel = new StringBuilder();
-						StringBuilder zl_sel = new StringBuilder();
+						StringBuffer el_sel = new StringBuffer();
+						StringBuffer zl_sel = new StringBuffer();
 						org.json.simple.JSONArray el_sel_json = new org.json.simple.JSONArray();
 						org.json.simple.JSONArray zl_sel_json = new org.json.simple.JSONArray();
-						StringBuilder rest_sel = new StringBuilder();
+						StringBuffer rest_sel = new StringBuffer();
 						// Talk mit Peter am 18.8.: "Mieterliste" weg tun, weils komisch ausschaut wenns alphabetisch ist und man weiss ohnehin was es is
 						boolean showMieterlisteInSeletor = false;
 						boolean zlselected = false;
@@ -3440,7 +3458,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						for(int p = 0; p < liste.size(); p++)
 						{
 							// System.err.println("ZLU2: Liste "+p);
-							HashMap<String, Object> e = (HashMap<String, Object>)liste.get(p);
+							Hashtable e = (Hashtable)liste.elementAt(p);
 							String text = (String)e.get("text");
 							Integer index = (Integer)e.get("index");
 							if(text.indexOf("Mieterliste") >= 0)
@@ -3614,7 +3632,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				else
 				{
 					zl = getZinsliste(file, zlIndex.intValue());
-					ArrayList<HashMap<String, String>> mappingchangesV = getMappingChangesVector();
+					Vector<Hashtable<String, String>> mappingchangesV = getMappingChangesVector();
 					System.out.println("Zinsliste vor Usermanipulation");
 					System.out.println(zl.toString());
 					if(mappingchangesV.size() > 0)
@@ -3730,7 +3748,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 							Path path = Path.of(tmpDirectory + System.getProperty("file.separator") + file);
 							byte[] data = Files.readAllBytes(path);
 
-							HashMap<String, Object> fparams = new HashMap<>();
+							Hashtable fparams = new Hashtable();
 							fparams.put("size", "" + data.length);
 							fparams.put("paramname", "zinslistenfile");
 							fparams.put("name", file);
@@ -4045,10 +4063,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					log(" folgende fehler sind bei haus " + zl.haus + " in zukunft zu ignorieren:" + ignoreerrors);
 				}
 
-				HashMap<String, Object> allmytops = new HashMap<>();
-				HashMap<String, Object> allmytopsInfoHash = new HashMap<>();
+				Hashtable allmytops = new Hashtable();
+				Hashtable allmytopsInfoHash = new Hashtable();
 				// mit bereinigten namen !!!
-				HashMap<String, Object> allmyinternaltops = new HashMap<>();
+				Hashtable allmyinternaltops = new Hashtable();
 
 				if(null != oid_haus)
 				{
@@ -4062,7 +4080,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					// prefetch last CIMS.zinszeile for each top
 					fillLastZZ4Top(oid_haus);
 
-					HashMap<String, Object> alltopsmerged = new HashMap<>();
+					Hashtable alltopsmerged = new Hashtable();
 					alltopsmerged.putAll(allmytops);
 					alltopsmerged.putAll(allmyinternaltops);
 
@@ -4087,7 +4105,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					Vector res = tq.getZinslistenMonateForHaus(oid_haus);
 					if(res != null && res.size() > 0)
 					{
-						HashMap<String, Object> zldate = (HashMap<String, Object>)res.get(0);
+						Hashtable zldate = (Hashtable)res.get(0);
 
 						int m1 = 0;
 						int m2 = 0;
@@ -4685,9 +4703,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				// --------------------------------------------
 				boolean createtops = false;
 
-				HashMap<String, Object> tops_in_zl = new HashMap<>();
-				HashMap<String, DynGenDataObj> topsZumUpdate = new HashMap<String, DynGenDataObj>();
-				HashMap<String, DynGenDataObj> stellplaetzeZumUpdate = new HashMap<String, DynGenDataObj>();
+				Hashtable tops_in_zl = new Hashtable();
+				Hashtable<String, DynGenDataObj> topsZumUpdate = new Hashtable<String, DynGenDataObj>();
+				Hashtable<String, DynGenDataObj> stellplaetzeZumUpdate = new Hashtable<String, DynGenDataObj>();
 
 				// CREATE NEW TOPS
 				String createnewtops = (String)this.get("arg.createnewtops");
@@ -4730,9 +4748,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				// noch nicht entschieden!!!!
 				if(createnewtops.equals("-1"))// ||zusammenlegenautomatisch)
 				{
-					StringBuilder ct = new StringBuilder();
+					StringBuffer ct = new StringBuffer();
 
-					StringBuilder sballe = new StringBuilder();
+					StringBuffer sballe = new StringBuffer();
 
 					int count_unbekannte_tops = 0;
 					int count_verkaufte_tops = 0;
@@ -4745,7 +4763,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						double calculation = (Double.parseDouble(String.valueOf(j)) / Double.parseDouble(String.valueOf(zl.zinszeilen.size()))) * 0.2;
 						updateProgess(new BigDecimal(overallcalculation + calculation), "Verarbeitung Einheiten " + (j + 1) + "/" + zl.zinszeilen.size(), null);
 
-						HashMap<String, Object> ht = (HashMap<String, Object>)zl.zinszeilen.get(j);
+						Hashtable ht = (Hashtable)zl.zinszeilen.get(j);
 						String top = (String)ht.get("top");
 
 						String zzInfo = getTopInfoStringFromZZHT(ht);
@@ -4949,7 +4967,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						DAInst = conn.getDataAgent();
 					}
 
-					HashMap<String, Object> updateRes = DAInst.storeObjects(topsZumUpdate, session);
+					Hashtable updateRes = DAInst.storeObjects(topsZumUpdate, session);
 					updateProgess(new BigDecimal(overallcalculation), "Speichern von " + zl.zinszeilen.size() + " Einheiten abgeschlossen", null);
 
 					for(int j = 0; j < zl.stellplaetze.size(); j++)
@@ -4957,7 +4975,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						double calculation = (Double.parseDouble(String.valueOf(j)) / Double.parseDouble(String.valueOf(zl.stellplaetze.size()))) * 0.2;
 						updateProgess(new BigDecimal(overallcalculation + calculation), "Verarbeitung Stellplätze " + (j + 1) + "/" + zl.stellplaetze.size(), null);
 
-						HashMap<String, Object> ht = (HashMap<String, Object>)zl.stellplaetze.get(j);
+						Hashtable ht = (Hashtable)zl.stellplaetze.get(j);
 						String top = (String)ht.get("top");
 
 						String zzInfo = getTopInfoStringFromZZHT(ht);
@@ -5161,7 +5179,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					}
 
 					overallcalculation = 0.8;
-					HashMap<String, Object> updateResStellplaetze = DAInst.storeObjects(stellplaetzeZumUpdate, session);
+					Hashtable updateResStellplaetze = DAInst.storeObjects(stellplaetzeZumUpdate, session);
 					updateProgess(new BigDecimal(overallcalculation), "Speichern von " + zl.stellplaetze.size() + " Stellplätzen abgeschlossen", null);
 
 					if(count_unbekannte_tops > 0)
@@ -5177,7 +5195,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						ct.append("<b>" + count_zusammengelegte_tops + " " + Tr.t("textCountCombinedRU", session.getString("language")) + "</b><br>\n");
 					}
 
-					HashMap<String, Object> allmytopsAKTIV = null;
+					Hashtable allmytopsAKTIV = null;
 					if(xc != null)
 					{
 						String zltypeName = zinslistenImport.getZlTypeConfig().getName();
@@ -5206,12 +5224,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					}
 
 					// uber tops mit status gekauft iterieren
-					// Enumeration converted to for-each loop
-					for(String e : allmytopsAKTIV.keySet()) {
+					Enumeration e = allmytopsAKTIV.keys();
 					boolean headerMissing = true;
 					boolean buttonSelection = false;
 
-						String topname = e;
+					while(e.hasMoreElements())
+					{
+						String topname = (String)e.nextElement();
 						if(null != topname)
 						{
 							// kommt das top in der zinszeile vor?
@@ -5406,7 +5425,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					if(createtops)
 					{
 						// Welche Tops haben wir?
-						StringBuilder exitops = new StringBuilder();
+						StringBuffer exitops = new StringBuffer();
 						exitops.append("<br>\n");
 
 						session.set("CURRENT_VIEW", "NEWTOPS");
@@ -5444,14 +5463,14 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				}
 				else if(createnewtops.equals("1"))
 				{
-					HashMap<String, Object> newtops = new HashMap<>();
+					Hashtable newtops = new Hashtable();
 					int ntcount = 0;
 
 					String oid_gebaeude = "";
 
 					for(int j = 0; j < zl.zinszeilen.size(); j++)
 					{
-						HashMap<String, Object> ht = (HashMap<String, Object>)zl.zinszeilen.get(j);
+						Hashtable ht = (Hashtable)zl.zinszeilen.get(j);
 
 						// PKO - Gebaeude oid needed to write slot gtops on gebaeude
 						if(ht.containsKey("gebaeudeedvnummer"))
@@ -5510,7 +5529,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 							zlprotocol.appendHtmlRes(Tr.t("textRentalUnitExists1", session.getString("language")) + " <a  class='ajaxLink redlink' href=\"" + myurl2 + "\">" + topinfo + "</a> " + Tr.t("textRentalUnitExists2", session.getString("language")) + "<br>\n");
 
 							// todo ayse
-							HashMap<String, Object> allmytopsAKTIV = null;
+							Hashtable allmytopsAKTIV = null;
 							if(xc != null)
 							{
 								String zltypeName = zinslistenImport.getZlTypeConfig().getName();
@@ -5539,12 +5558,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 							}
 
 							// uber tops mit status gekauft iterieren
-							// Enumeration converted to for-each loop
-					for(String e : allmytopsAKTIV.keySet()) {
+							Enumeration e = allmytopsAKTIV.keys();
 							boolean headerMissing = true;
 							boolean buttonSelection = false;
 
-								String topname = e;
+							while(e.hasMoreElements())
+							{
+								String topname = (String)e.nextElement();
 								if(null != topname)
 								{
 									// kommt das top in der zinszeile vor?
@@ -5696,7 +5716,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 					for(int j = 0; j < zl.stellplaetze.size(); j++)
 					{
-						HashMap<String, Object> ht = (HashMap<String, Object>)zl.stellplaetze.get(j);
+						Hashtable ht = (Hashtable)zl.stellplaetze.get(j);
 
 						// PKO - Gebaeude oid needed to write slot gtops on gebaeude
 						if(ht.containsKey("gebaeudeedvnummer"))
@@ -5812,7 +5832,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					if(newtops.size() > 0)
 					{
 						log("Lege " + newtops.size() + " Mieteinheiten an.");
-						HashMap<String, Object> tres = storeObjectsJunked(newtops, session);
+						Hashtable tres = storeObjectsJunked(newtops, session);
 						if(tres != null)
 						{
 							addTopsToHaus(tres, oid_haus);
@@ -5826,13 +5846,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					}
 
 					// Tops den Gebaeuden zuordnen
-					HashMap<String, HashMap<String, String>> topszugebaeuden = new HashMap<String, HashMap<String, String>>();
-					HashMap<String, String> topzugebaeude = new HashMap<String, String>();
+					Hashtable<String, Hashtable<String, String>> topszugebaeuden = new Hashtable<String, Hashtable<String, String>>();
+					Hashtable<String, String> topzugebaeude = new Hashtable<String, String>();
 					String old_oid_gebaeude = "";
 
 					for(int j = 0; j < zl.zinszeilen.size(); j++)
 					{
-						HashMap<String, Object> ht = (HashMap<String, Object>)zl.zinszeilen.get(j);
+						Hashtable ht = (Hashtable)zl.zinszeilen.get(j);
 
 						if(ht.containsKey("gebaeudeedvnummer"))
 						{
@@ -5852,7 +5872,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						if(!old_oid_gebaeude.equals(oid_gebaeude) && old_oid_gebaeude != null && old_oid_gebaeude.length() > 0)
 						{
 							topszugebaeuden.put(old_oid_gebaeude, topzugebaeude);
-							topzugebaeude = new HashMap<String, String>();
+							topzugebaeude = new Hashtable<String, String>();
 							old_oid_gebaeude = oid_gebaeude;
 						}
 
@@ -5868,10 +5888,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						}
 					}
 
-					topzugebaeude = new HashMap<String, String>();
+					topzugebaeude = new Hashtable<String, String>();
 					for(int j = 0; j < zl.stellplaetze.size(); j++)
 					{
-						HashMap<String, Object> ht = (HashMap<String, Object>)zl.stellplaetze.get(j);
+						Hashtable ht = (Hashtable)zl.stellplaetze.get(j);
 
 						if(ht.containsKey("gebaeudeedvnummer"))
 						{
@@ -5891,7 +5911,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						if(!old_oid_gebaeude.equals(oid_gebaeude) && old_oid_gebaeude != null && old_oid_gebaeude.length() > 0)
 						{
 							topszugebaeuden.put(old_oid_gebaeude, topzugebaeude);
-							topzugebaeude = new HashMap<String, String>();
+							topzugebaeude = new Hashtable<String, String>();
 							old_oid_gebaeude = oid_gebaeude;
 						}
 
@@ -5949,7 +5969,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					starttime = System.currentTimeMillis();
 				}
 
-				HashMap<String, Object> zz2store = zinszeilenAnlegen(zl, top_list, oid_haus, true);
+				Hashtable zz2store = zinszeilenAnlegen(zl, top_list, oid_haus, true);
 
 				if(enableDetailedLogging)
 				{
@@ -5988,7 +6008,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					String[][] datapackage = dataPackage.data;
 					for(int i = 0; i < datapackage.length; i++)
 					{
-						StringBuilder buff = new StringBuilder();
+						StringBuffer buff = new StringBuffer();
 						for(int j = 0; j < datapackage[0].length; j++)
 						{
 							buff.append(datapackage[i][j]);
@@ -6041,7 +6061,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				String mailAndName = getAssetmanagerMailadressFromObject(oid_haus);
 
 				boolean periodenvergleich = this.getBoolean("var.periodenvergleich", Boolean.TRUE);
-				HashMap<String, String> mailinglistKennwerteNachNutzung = new HashMap<String, String>();
+				Hashtable<String, String> mailinglistKennwerteNachNutzung = new Hashtable<String, String>();
 				if(periodenvergleich)
 				{
 					try
@@ -6248,19 +6268,19 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 			String[] valueSplitt = value.split("<br>");
 
-			StringBuilder newObjects = new StringBuilder();
-			StringBuilder unknownObjects = new StringBuilder();
-			StringBuilder changes = new StringBuilder();
-			StringBuilder noChanges = new StringBuilder();
-			StringBuilder errors = new StringBuilder();
-			StringBuilder newTops = new StringBuilder();
-			StringBuilder unknownTops = new StringBuilder();
-			StringBuilder salutation = new StringBuilder();
-			StringBuilder footer = new StringBuilder();
-			StringBuilder filelink = new StringBuilder();
-			StringBuilder zapos = new StringBuilder();
-			StringBuilder importresult = new StringBuilder();
-			StringBuilder periodcomparison = new StringBuilder();
+			StringBuffer newObjects = new StringBuffer();
+			StringBuffer unknownObjects = new StringBuffer();
+			StringBuffer changes = new StringBuffer();
+			StringBuffer noChanges = new StringBuffer();
+			StringBuffer errors = new StringBuffer();
+			StringBuffer newTops = new StringBuffer();
+			StringBuffer unknownTops = new StringBuffer();
+			StringBuffer salutation = new StringBuffer();
+			StringBuffer footer = new StringBuffer();
+			StringBuffer filelink = new StringBuffer();
+			StringBuffer zapos = new StringBuffer();
+			StringBuffer importresult = new StringBuffer();
+			StringBuffer periodcomparison = new StringBuffer();
 
 			for(int i = 0; i < valueSplitt.length; i++)
 			{
@@ -6454,26 +6474,26 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		String[] valueSplitt2 = new String[]{};
 
 		valueSplitt2 = htmlresbuf.split("<tbody>");
-		StringBuilder header = new StringBuilder();
+		StringBuffer header = new StringBuffer();
 		header.append("<tbody>" + valueSplitt2[0]);
 
 		// valueSplitt2[1] = valueSplitt2[1].replaceAll("<br>", "").trim();
 		valueSplitt = valueSplitt2[1].split("</tbody></table></div>");
 		valueSplitt = valueSplitt[0].split("<br>");
 
-		StringBuilder newObjects = new StringBuilder();
-		StringBuilder unknownObjects = new StringBuilder();
-		StringBuilder changes = new StringBuilder();
-		StringBuilder noChanges = new StringBuilder();
-		StringBuilder errors = new StringBuilder();
-		StringBuilder newTops = new StringBuilder();
-		StringBuilder unknownTops = new StringBuilder();
-		StringBuilder salutation = new StringBuilder();
-		StringBuilder footer = new StringBuilder();
-		StringBuilder filelink = new StringBuilder();
-		StringBuilder zapos = new StringBuilder();
-		StringBuilder importresult = new StringBuilder();
-		StringBuilder periodcomparison = new StringBuilder();
+		StringBuffer newObjects = new StringBuffer();
+		StringBuffer unknownObjects = new StringBuffer();
+		StringBuffer changes = new StringBuffer();
+		StringBuffer noChanges = new StringBuffer();
+		StringBuffer errors = new StringBuffer();
+		StringBuffer newTops = new StringBuffer();
+		StringBuffer unknownTops = new StringBuffer();
+		StringBuffer salutation = new StringBuffer();
+		StringBuffer footer = new StringBuffer();
+		StringBuffer filelink = new StringBuffer();
+		StringBuffer zapos = new StringBuffer();
+		StringBuffer importresult = new StringBuffer();
+		StringBuffer periodcomparison = new StringBuffer();
 
 		for(int i = 0; i < valueSplitt.length; i++)
 		{
@@ -6703,12 +6723,12 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			}
 
 			// get Gebaeude from Array
-			HashMap<String, HashMap<String, String>> gebaeude = new HashMap<>();
+			Hashtable<String, Hashtable<String, String>> gebaeude = new Hashtable<>();
 			String[] headlinearray = array[zinslistenImport.getZlTypeConfig().getHeaderline()];
 
 			for(int i = zinslistenImport.getZlTypeConfig().getHeaderline() + 1; i < array.length; i++)
 			{
-				HashMap<String, String> row = new HashMap<>();
+				Hashtable<String, String> row = new Hashtable<>();
 				String gebaeudeedvnummer = "";
 				for(int j = 0; j < headlinearray.length; j++)
 				{
@@ -6782,7 +6802,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					if(dgdGebaeude != null)
 					{
 						// set Gebaeude values
-						HashMap<String, String> row = gebaeude.get(gebaeudeedvnummer);
+						Hashtable<String, String> row = gebaeude.get(gebaeudeedvnummer);
 
 						for(String key : row.keySet())
 						{
@@ -6857,12 +6877,12 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			DAInst = conn.getDataAgent();
 		}
 		TopoQueries topoQueries = new TopoQueries(session, global);
-		HashMap<String, Object> allmytops = topoQueries.getTopsForOID(oid_haus, null, session, DAInst);
-		HashMap<String, Object> allmyinternaltops = TopoTool.getInternalTopsForTops(allmytops);
+		Hashtable allmytops = topoQueries.getTopsForOID(oid_haus, null, session, DAInst);
+		Hashtable allmyinternaltops = TopoTool.getInternalTopsForTops(allmytops);
 
 		for(int j = 0; j < zl.zinszeilen.size(); j++)
 		{
-			HashMap<String, Object> ht = (HashMap<String, Object>)zl.zinszeilen.get(j);
+			Hashtable ht = (Hashtable)zl.zinszeilen.get(j);
 
 			String gebaeudeedvnummerToCompare = "";
 			if(ht.containsKey("gebaeude_gebaeudeedvnummer"))
@@ -6921,7 +6941,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 		for(int j = 0; j < zl.stellplaetze.size(); j++)
 		{
-			HashMap<String, Object> ht = (HashMap<String, Object>)zl.stellplaetze.get(j);
+			Hashtable ht = (Hashtable)zl.stellplaetze.get(j);
 
 			String gebaeudeedvnummerToCompare = "";
 			if(ht.containsKey("gebaeude_gebaeudeedvnummer"))
@@ -6988,7 +7008,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	{
 		try
 		{
-			ArrayList<HashMap<String, String>> res = new ArrayList<HashMap<String, String>>();
+			Vector<Hashtable<String, String>> res = new Vector<Hashtable<String, String>>();
 
 			ArgsHelper argsHelper = new ArgsHelper();
 			argsHelper.setMainTemplateType("CIMS.gebaeude");
@@ -7030,7 +7050,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			else if(res != null && res.size() == 1)
 			{
 
-				HashMap<String, String> row = res.get(0);
+				Hashtable<String, String> row = res.get(0);
 				String oid = row.get("ID");
 				return oid;
 			}
@@ -7077,12 +7097,12 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the oid_haus
 	 * @return true, if successful
 	 */
-	private boolean junkStore(HashMap<String, Object> newtops, String oid_haus)
+	private boolean junkStore(Hashtable newtops, String oid_haus)
 	{
 		try
 		{
 			log("Lege " + newtops.size() + " Mieteinheiten an.");
-			HashMap<String, Object> tres = storeObjectsJunked(newtops, session);
+			Hashtable tres = storeObjectsJunked(newtops, session);
 			if(tres != null)
 			{
 				addTopsToHaus(tres, oid_haus);
@@ -7114,7 +7134,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 */
 	private Zinsliste createVerknuepfungZuMietvertrag(TopList top_list, Zinsliste zl, boolean fehlerabfrage)
 	{
-		HashMap<String, ArrayList<Object>> topsToWrite = new HashMap<String, ArrayList<Object>>();
+		Hashtable<String, Vector> topsToWrite = new Hashtable<String, Vector>();
 
 		// Ueber alle Elemente der Toplist iterieren und cheken ob Mietvertrag vorhanden ist
 		if(zinslistenImport.getZlTypeConfig().isVertragsverknuepfung())
@@ -7128,7 +7148,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				{
 					if(null == topsCache)
 					{
-						topsCache = new HashMap<>();
+						topsCache = new Hashtable();
 					}
 					if(!topsCache.containsKey(oids_top[i]))
 					{
@@ -7137,9 +7157,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					}
 				}
 
-				ArrayList<HashMap<String, String>> res1 = new ArrayList<HashMap<String, String>>();
+				Vector<Hashtable<String, String>> res1 = new Vector<Hashtable<String, String>>();
 
-				HashMap<String, Object> args = new Hashtable<String, Object>();
+				Hashtable<String, Object> args = new Hashtable<String, Object>();
 
 				args.put("advancedfields", "TRUE");
 
@@ -7176,10 +7196,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				res1 = qr.getResult();
 
 				// Tops den Mietvertraegen zuordnen
-				HashMap<String, MietvertragElement> topidsZuMietvertrag = new HashMap<String, MietvertragElement>();
+				Hashtable<String, MietvertragElement> topidsZuMietvertrag = new Hashtable<String, MietvertragElement>();
 				for(int j = 0; j < zl.zinszeilen.size(); j++)
 				{
-					HashMap<String, Object> ht = (HashMap<String, Object>)zl.zinszeilen.get(j);
+					Hashtable ht = (Hashtable)zl.zinszeilen.get(j);
 					String top = (String)ht.get("top");
 
 					TopElement te = null;
@@ -7238,7 +7258,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					boolean mietvertragExists = false;
 					for(int k = 0; k < res1.size(); k++)
 					{
-						HashMap<String, Object> queryResult = res1.get(k);
+						Hashtable queryResult = res1.get(k);
 
 						String vertragsId = (String)queryResult.get("vertragid");
 						if(vertragsId.equals(mietvertragsnummer) && mietvertragsnummer.length() > 0)
@@ -7299,7 +7319,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 							}
 							else
 							{
-								HashMap<String, String> h = new HashMap<String, String>();
+								Hashtable<String, String> h = new Hashtable<String, String>();
 								h.put("ID", mietvertragsId);
 								h.put("vertragid", mietvertragsnummer);
 								h.put("tops", "");
@@ -7330,7 +7350,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 							else
 							{
 								MietvertragElement mvElement = new MietvertragElement();
-								ArrayList<Object> newTops = new ArrayList<>();
+								Vector newTops = new Vector();
 								newTops.add(te.id);
 								mvElement.addTopElement(te);
 								mvElement.setId(mietvertragsId);
@@ -7345,8 +7365,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						}
 
 						// compare new with existing tops
-						for(String mietvertragsid : topidsZuMietvertrag.keySet())
-					{
+						Enumeration enu = topidsZuMietvertrag.keys();
+						while(enu.hasMoreElements())
+						{
+							String mietvertragsid = (String)enu.nextElement();
 							MietvertragElement mvElement = topidsZuMietvertrag.get(mietvertragsid);
 
 							Vector newTops = mvElement.getNewTops();
@@ -7368,10 +7390,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				}
 
 				// mietvertraege schreiben
-				// Enumeration converted to for-each loop
-					for(String e : topsToWrite.keySet()) {
+				Enumeration e = topsToWrite.keys();
+				while(e.hasMoreElements())
+				{
 					// key=mietvertragsid
-					String mietvertragsid = e;
+					String mietvertragsid = (String)e.nextElement();
 					if(mietvertragsid == null)
 					{
 						continue;
@@ -7390,8 +7413,8 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					topids.toArray(tids);
 
 					// check Mietvertragsflaeche VS Topsflaeche
-					ArrayList<HashMap<String, String>> resSumTops = new ArrayList<HashMap<String, String>>();
-					HashMap<String, Object> argsSumTops = new Hashtable<String, Object>();
+					Vector<Hashtable<String, String>> resSumTops = new Vector<Hashtable<String, String>>();
+					Hashtable<String, Object> argsSumTops = new Hashtable<String, Object>();
 					argsSumTops.put("TType", "CIMS.top");
 					argsSumTops.put("fieldClause", "sum(nfl) sumtopnfl");
 					argsSumTops.put("ID", tids);
@@ -7412,7 +7435,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 					for(int l = 0; l < resSumTops.size(); l++)
 					{
-						HashMap<String, Object> queryResult = resSumTops.get(l);
+						Hashtable queryResult = resSumTops.get(l);
 
 						String topsnfl = (String)queryResult.get("sumtopnfl");
 						if(!topsnfl.equals(mvElement.getMietvertragnfl()))
@@ -7522,8 +7545,8 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			// Get all Zinslistenupload Objects for Import
 			// -> Alle Objekte die noch kein Importergebnis haben (Später noch deren startzeit/modified zeid länger als X Stunden her ist)
 
-			HashMap<String, Object> args = new HashMap<>();
-			ArrayList<Object> res = new ArrayList<>();
+			Hashtable args = new Hashtable();
+			Vector res = new Vector();
 			args.put("TType", "ICRS.zinslisten.zinslistenupload");
 			// fieldClause ... Felder zum holen ,-separiert
 			args.put("fieldClause", "ID,ET0.gridimport,ET0.starttime,ET0.endtime");
@@ -7553,7 +7576,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				res = qr.getResult();
 				for(int i = 0; i < res.size(); i++)
 				{
-					HashMap<String, Object> h = (HashMap<String, Object>)res.get(0);
+					Hashtable h = (Hashtable)res.elementAt(0);
 					if(h != null)
 					{
 						zlUploadObjectIds.add(h.get("ID"));
@@ -7582,7 +7605,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						{
 							file = file.substring(5);
 						}
-						HashMap<String, Object> fparams = FDAInst.getParams(file);
+						Hashtable fparams = FDAInst.getParams(file);
 
 						byte[] data = FDAInst.getObject(file);
 
@@ -7594,7 +7617,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 							continue;
 						}
 
-						HashMap<String, Object> vars = this.getSubs("var");
+						Hashtable vars = this.getSubs("var");
 						for(Object key : vars.keySet())
 						{
 							try
@@ -7606,7 +7629,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 									String selector = this.getString("var." + key + ".SELECTOR");
 									if(selector.length() > 0)
 									{
-										HashMap<String, Object> opts = getValueMap(selector);
+										Hashtable opts = getValueMap(selector);
 										if(opts.containsKey(value))
 										{
 											value = (String)opts.get(value);
@@ -7657,7 +7680,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 						if(fparams == null && data != null)
 						{
-							fparams = new HashMap<>();
+							fparams = new Hashtable();
 							fparams.put("size", "" + data.length);
 							fparams.put("paramname", "zinslistenfile");
 							fparams.put("name", file);
@@ -7727,7 +7750,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the quellsystem
 	 * @return the zinsliste
 	 */
-	private Zinsliste getZinsliste(String file, int index, ArrayList<Object> quellsystemResult, String quellsystem)
+	private Zinsliste getZinsliste(String file, int index, Vector quellsystemResult, String quellsystem)
 	{
 		Date d1 = new Date();
 
@@ -7770,7 +7793,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					conn = new Connector();
 					FDAInst = conn.getFileDataAgent();
 				}
-				HashMap<String, Object> fparams = FDAInst.getParams(file);
+				Hashtable fparams = FDAInst.getParams(file);
 
 				byte[] content = null;
 				if(file.equals(cachedfile) && null != cachedcontent)
@@ -8170,7 +8193,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 		for(int j = 0; j < zl.zinszeilen.size(); j++)
 		{
-			HashMap<String, Object> ht = (HashMap<String, Object>)zl.zinszeilen.get(j);
+			Hashtable ht = (Hashtable)zl.zinszeilen.get(j);
 
 			String vertragidZinszeile = (String)ht.get("mietvertragzuordnung");
 			if(vertragidZinszeile == null || vertragidZinszeile.length() == 0)
@@ -8189,7 +8212,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			if(vertragidDGD.equals(vertragidZinszeile))
 			{
 
-				HashMap<String, Object> vars = mietvertragDgd.getSubs("var");
+				Hashtable vars = mietvertragDgd.getSubs("var");
 
 				for(Object key : vars.keySet())
 				{
@@ -8256,7 +8279,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            Hashtable with importvalues
 	 * @return null if no original Currency Value
 	 */
-	private OriginalCurrencyValue getOriginalCurrencyValue(String key, HashMap<String, Object> ht)
+	private OriginalCurrencyValue getOriginalCurrencyValue(String key, Hashtable ht)
 	{
 		try
 		{
@@ -8386,7 +8409,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            zinszeile
 	 * @return dgd with change field
 	 */
-	private DynGenDataObj writeZZValue2DGD(String targetname, String sourcename, String default_on_empty_or_null, DynGenDataObj dgd, HashMap<String, Object> ht)
+	private DynGenDataObj writeZZValue2DGD(String targetname, String sourcename, String default_on_empty_or_null, DynGenDataObj dgd, Hashtable ht)
 	{
 		String oldval = (String)dgd.get("var." + targetname);
 
@@ -8426,7 +8449,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			{
 				if(null == topsCache)
 				{
-					topsCache = new HashMap<>();
+					topsCache = new Hashtable();
 				}
 				if(!topsCache.containsKey(oids_top[i]))
 				{
@@ -8435,9 +8458,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				}
 			}
 
-			ArrayList<HashMap<String, String>> res1 = new ArrayList<HashMap<String, String>>();
+			Vector<Hashtable<String, String>> res1 = new Vector<Hashtable<String, String>>();
 
-			HashMap<String, Object> args = new Hashtable<String, Object>();
+			Hashtable<String, Object> args = new Hashtable<String, Object>();
 
 			args.put("advancedfields", "TRUE");
 
@@ -8468,7 +8491,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 			if(res1.size() > 0)
 			{
-				HashMap<String, Object> h = res1.get(0);
+				Hashtable h = res1.elementAt(0);
 				if(h != null)
 				{
 					String mietvertragvon = (String)h.get("kuendigungsdatum");
@@ -8516,16 +8539,16 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the topname
 	 * @return get latest ZZ indexbasis und indexart
 	 */
-	private HashMap<String, String> getLatestIndexDatumFromZZ(String adresse, String topname, String jahr, String monat, String mietvertragvonZL)
+	private Hashtable<String, String> getLatestIndexDatumFromZZ(String adresse, String topname, String jahr, String monat, String mietvertragvonZL)
 	{
 
-		HashMap<String, String> indexHashtoTop = new HashMap<String, String>();
+		Hashtable<String, String> indexHashtoTop = new Hashtable<String, String>();
 		try
 		{
-			ArrayList<HashMap<String, String>> res1 = new ArrayList<HashMap<String, String>>();
-			HashMap<String, Object> args = new Hashtable<String, Object>();
+			Vector<Hashtable<String, String>> res1 = new Vector<Hashtable<String, String>>();
+			Hashtable<String, Object> args = new Hashtable<String, Object>();
 
-			StringBuilder sqlbuffer = new StringBuilder();
+			StringBuffer sqlbuffer = new StringBuffer();
 
 			args.put("TType", "CIMS.top");
 			args.put("REVtops_templatetype", "CIMS.haus");
@@ -8552,7 +8575,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			String topid = null;
 			if(res1.size() > 0)
 			{
-				HashMap<String, Object> h = res1.get(0);
+				Hashtable h = res1.elementAt(0);
 				if(h != null)
 				{
 					topid = (String)h.get("topid");
@@ -8578,8 +8601,8 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				}
 			}
 
-			ArrayList<HashMap<String, String>> res2 = new ArrayList<HashMap<String, String>>();
-			HashMap<String, Object> args2 = new Hashtable<String, Object>();
+			Vector<Hashtable<String, String>> res2 = new Vector<Hashtable<String, String>>();
+			Hashtable<String, Object> args2 = new Hashtable<String, Object>();
 			args2.put("advancedfields", "TRUE");
 			args2.put("TType", "CIMS.zinszeile");
 			args2.put("top_templatetype", "CIMS.top");
@@ -8629,7 +8652,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			res2 = qr2.getResult();
 			if(res2.size() > 0)
 			{
-				HashMap<String, Object> h = res2.get(0);
+				Hashtable h = res2.elementAt(0);
 				if(h != null)
 				{
 					String indexdatum = (String)h.get("indexdatum");
@@ -8704,7 +8727,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 * @param source
 	 *            quell hash
 	 */
-	private void addOriginalCurrencyValues(String targetFieldName, String sourceFieldName, DynGenDataObj target, HashMap<String, Object> source)
+	private void addOriginalCurrencyValues(String targetFieldName, String sourceFieldName, DynGenDataObj target, Hashtable source)
 	{
 		// Sauberes Mullticurrencyhandling prüft ob die nötigen Währungsfelder vorhanden sind
 		if(CfgSingleton.getInstance().isMultiCurrencySystem())
@@ -8897,16 +8920,16 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the monat
 	 * @return the zins zeilen
 	 */
-	public HashMap<String, HashMap<String, String>> getZinsZeilen(String[] topoids, String jahr, String monat)
+	public Hashtable<String, Hashtable<String, String>> getZinsZeilen(String[] topoids, String jahr, String monat)
 	{
 		if(null == topoids || topoids.length == 0)
 		{
 			log("Abfrgae nach Zinszeilen ohne angegebene Tops.");
-			return new HashMap<>();
+			return new Hashtable();
 		}
 
 		zinsZeilenCache = null;
-		zinsZeilenCache = new HashMap<>();
+		zinsZeilenCache = new Hashtable();
 		if(null != monat && monat.startsWith("0"))
 		{
 			if(monat.length() == 2)
@@ -8919,8 +8942,8 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			monat = "";
 		}
 		// System.err.println();
-		HashMap<String, Object> args = new HashMap<>();
-		ArrayList<HashMap<String, String>> res = new ArrayList<>();
+		Hashtable args = new Hashtable();
+		Vector<Hashtable<String, String>> res = new Vector();
 		args.put("TType", "CIMS.zinszeile");
 		// fieldClause ... Felder zum holen ,-separiert
 		args.put("fieldClause", "DOB.ID zzid,mieter,nutzung,nfl,leerfl,hauptmietzins,betriebskosten ,reparaturfond,name,DDT1.ID topid");
@@ -8958,11 +8981,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		// java.util.Date end_time = new java.util.Date();
 		// long run_time = end_time.getTime() - start_time.getTime();
 
-		HashMap<String, HashMap<String, String>> top2zz = new HashMap<String, HashMap<String, String>>();
+		Hashtable<String, Hashtable<String, String>> top2zz = new Hashtable<String, Hashtable<String, String>>();
 		// System.err.println("ZLU2: res size is "+res.size());
 		for(int x = 0; x < res.size(); x++)
 		{
-			HashMap<String, String> h = res.get(x);
+			Hashtable<String, String> h = res.elementAt(x);
 			if(h != null)
 			{
 				String topid = h.get("topid");
@@ -9013,11 +9036,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		if(null == topoids || topoids.length == 0)
 		{
 			log("Abfrage nach Zinszeilen ohne angegebene Tops.");
-			return new HashMap<>();
+			return new Hashtable();
 		}
 
-		HashMap<String, Object> args = new HashMap<>();
-		ArrayList<Object> res = new ArrayList<>();
+		Hashtable args = new Hashtable();
+		Vector res = new Vector();
 		args.put("TType", "CIMS.zinszeile");
 		// fieldClause ... Felder zum holen ,-separiert
 
@@ -9056,11 +9079,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		// java.util.Date end_time = new java.util.Date();
 		// long run_time = end_time.getTime() - start_time.getTime();
 
-		HashMap<String, Object> top2zz = new HashMap<>();
+		Hashtable top2zz = new Hashtable();
 		// System.err.println("ZLU2: res size is "+res.size());
 		for(int x = 0; x < res.size(); x++)
 		{
-			HashMap<String, Object> h = (HashMap<String, Object>)res.get(x);
+			Hashtable h = (Hashtable)res.elementAt(x);
 			if(h != null)
 			{
 				String topname = (String)h.get("topname");
@@ -9253,7 +9276,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			return;
 		}
 
-		StringBuilder error = new StringBuilder();
+		StringBuffer error = new StringBuffer();
 
 		// pko@metamagix.net;PKO assetmanager
 
@@ -9319,8 +9342,8 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			debug.error(this, "no from (fromemail) defined in essence.cfg," + "no from (fromemail) defined in Site, using root ");
 		}
 
-		ArrayList<Object> to_addresses = new ArrayList<>();
-		new ArrayList<>();
+		Vector to_addresses = new Vector();
+		new Vector();
 
 		// Beistrich wird weiter oben dazugegeben
 		mail = mail + bcc_emails;
@@ -9342,7 +9365,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		// if(!mail.equals(""))
 		// {
 		//
-		// to_addresses.add(mail);
+		// to_addresses.addElement(mail);
 		// }
 
 		Date now = new Date();
@@ -9481,9 +9504,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				debug.error(this, "no from (fromemail) defined in essence.cfg," + "no from (fromemail) defined in Site, using root ");
 			}
 
-			ArrayList<Object> to_addresses = new ArrayList<>();
-			ArrayList<Object> cc_addresses = new ArrayList<>();
-			// ArrayList<Object> cc_addresses = new ArrayList<>();
+			Vector to_addresses = new Vector();
+			Vector cc_addresses = new Vector();
+			// Vector cc_addresses = new Vector();
 
 			useremail = useremail + bcc_emails;
 
@@ -9509,7 +9532,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			shortinfo = shortinfo.replaceAll("\\n", "").trim();
 			String subject = "Automatischer Zinslisten Import " + shortinfo + " - (" + filenameforemail + ")";
 
-			ArrayList<Object> parts = new ArrayList<>();
+			Vector parts = new Vector();
 
 			// String mydomain = (String)session.get("domainid");
 
@@ -9595,8 +9618,8 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				debug.error(this, "no from (fromemail) defined in essence.cfg," + "no from (fromemail) defined in Site, using root ");
 			}
 
-			ArrayList<Object> to_addresses = new ArrayList<>();
-			// ArrayList<Object> cc_addresses = new ArrayList<>();
+			Vector to_addresses = new Vector();
+			// Vector cc_addresses = new Vector();
 
 			if(!useremail.equals(""))
 			{
@@ -9615,7 +9638,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				}
 			}
 
-			ArrayList<Object> parts = new ArrayList<>();
+			Vector parts = new Vector();
 
 			debug.log("send email" + message);
 
@@ -9675,9 +9698,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the file
 	 * @return the vector
 	 */
-	private ArrayList<Object> readListe(String file)
+	private Vector readListe(String file)
 	{
-		ArrayList<Object> liste = new ArrayList<>();
+		Vector liste = new Vector();
 		// ---------------------------------------------
 		// LISTEN LESEN
 		// ---------------------------------------------
@@ -9689,7 +9712,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				conn = new Connector();
 				FDAInst = conn.getFileDataAgent();
 			}
-			HashMap<String, Object> zlfparams = FDAInst.getParams(file);
+			Hashtable zlfparams = FDAInst.getParams(file);
 
 			byte[] content = null;
 			if(file.equals(cachedfile) && null != cachedcontent)
@@ -9768,8 +9791,8 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				{
 					for(int z = 0; z < fehlerliste.size(); z++)
 					{
-						// System.err.println("ZLU2: ERROR "+(String)fehlerliste.get(z));
-						zlprotocol.appendHtmlErr((String)fehlerliste.get(z) + "<br><br>\n");
+						// System.err.println("ZLU2: ERROR "+(String)fehlerliste.elementAt(z));
+						zlprotocol.appendHtmlErr((String)fehlerliste.elementAt(z) + "<br><br>\n");
 					}
 				}
 			}
@@ -9820,9 +9843,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the quellsystem
 	 * @return the vector
 	 */
-	private ArrayList<Object> readQuellsystemListe(ArrayList<Object> quellsystemResult, String quellsystem)
+	private Vector readQuellsystemListe(Vector quellsystemResult, String quellsystem)
 	{
-		ArrayList<Object> liste = new ArrayList<>();
+		Vector liste = new Vector();
 		// ---------------------------------------------
 		// LISTEN LESEN
 		// ---------------------------------------------
@@ -9870,8 +9893,8 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				{
 					for(int z = 0; z < fehlerliste.size(); z++)
 					{
-						// System.err.println("ZLU2: ERROR "+(String)fehlerliste.get(z));
-						zlprotocol.appendHtmlErr((String)fehlerliste.get(z) + "<br><br>\n");
+						// System.err.println("ZLU2: ERROR "+(String)fehlerliste.elementAt(z));
+						zlprotocol.appendHtmlErr((String)fehlerliste.elementAt(z) + "<br><br>\n");
 					}
 				}
 			}
@@ -9960,7 +9983,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				{
 					if(zl.zinszeilen.size() > 0)
 					{
-						HashMap<String, Object> ht = (HashMap<String, Object>)zl.zinszeilen.get(0);
+						Hashtable ht = (Hashtable)zl.zinszeilen.get(0);
 						if(ht.containsKey("hausadresse") && ht.get("hausadresse").toString().length() > 0)
 						{
 							// Wenn dieser parameter auf False, dann soll der Objektname nicht gesetzt werden
@@ -9988,7 +10011,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 					}
 					else if(zl.stellplaetze.size() > 0)
 					{
-						HashMap<String, Object> ht = (HashMap<String, Object>)zl.stellplaetze.get(0);
+						Hashtable ht = (Hashtable)zl.stellplaetze.get(0);
 
 						if(ht.containsKey("hausadresse") && ht.get("hausadresse").toString().length() > 0)
 						{
@@ -10112,7 +10135,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	private String getAssetmanagerMailadressFromObject(String hausid)
 	{
 
-		HashMap<String, Object> args = new Hashtable<String, Object>();
+		Hashtable<String, Object> args = new Hashtable<String, Object>();
 		ArgsHelper argsHelper = new ArgsHelper(args);
 		argsHelper.setMainTemplateType("CIMS.haus");
 		argsHelper.setAdvancedFields(true);
@@ -10133,7 +10156,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		}
 
 		// query result vector
-		ArrayList<HashMap<String, String>> res = null;
+		Vector<Hashtable<String, String>> res = null;
 		try
 		{
 			if(null == DAInst)
@@ -10154,7 +10177,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 		if(res.size() > 0)
 		{
-			HashMap<String, String> h = res.get(0);
+			Hashtable<String, String> h = res.get(0);
 
 			String mailAndName = "";
 
@@ -10186,11 +10209,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *
 	 * @return the alle W es in bestand
 	 */
-	private HashMap<String, Object> getAlleWEsInBestand()
+	private Hashtable getAlleWEsInBestand()
 	{
-		HashMap<String, HashMap<String, HashMap<String, String>>> result = new HashMap<String, HashMap<String, HashMap<String, String>>>();
+		Hashtable<String, Hashtable<String, Hashtable<String, String>>> result = new Hashtable<String, Hashtable<String, Hashtable<String, String>>>();
 
-		HashMap<String, Object> args = new Hashtable<String, Object>();
+		Hashtable<String, Object> args = new Hashtable<String, Object>();
 		ArgsHelper argsHelper = new ArgsHelper(args);
 		argsHelper.setMainTemplateType("CIMS.haus");
 		argsHelper.setAdvancedFields(true);
@@ -10216,7 +10239,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		}
 
 		// query result vector
-		ArrayList<HashMap<String, String>> res = null;
+		Vector<Hashtable<String, String>> res = null;
 		try
 		{
 			if(null == DAInst)
@@ -10239,7 +10262,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		{
 			for(int i = 0; i < res.size(); i++)
 			{
-				HashMap<String, String> h = res.get(0);
+				Hashtable<String, String> h = res.get(0);
 
 				String mailAndName = "";
 
@@ -10261,13 +10284,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 				if(result.containsKey(mailAndName))
 				{
-					HashMap<String, HashMap<String, String>> entry = result.get(mailAndName);
+					Hashtable<String, Hashtable<String, String>> entry = result.get(mailAndName);
 					entry.put(identadresse1, h);
 					result.put(mailAndName, entry);
 				}
 				else
 				{
-					HashMap<String, HashMap<String, String>> entry = new HashMap<String, HashMap<String, String>>();
+					Hashtable<String, Hashtable<String, String>> entry = new Hashtable<String, Hashtable<String, String>>();
 					entry.put(identadresse1, h);
 					result.put(mailAndName, entry);
 				}
@@ -10286,10 +10309,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the name
 	 * @return the mailverteiler from assetmanager
 	 */
-	private HashMap<String, Object> getMailverteilerFromAssetmanager(String name)
+	private Hashtable getMailverteilerFromAssetmanager(String name)
 	{
-		HashMap<String, Object> mailverteileradressen = new Hashtable<String, Object>();
-		HashMap<String, Object> args = new Hashtable<String, Object>();
+		Hashtable<String, Object> mailverteileradressen = new Hashtable<String, Object>();
+		Hashtable<String, Object> args = new Hashtable<String, Object>();
 		ArgsHelper argsHelper = new ArgsHelper(args);
 		argsHelper.setMainTemplateType("ICRScrm.assetmanager");
 		argsHelper.setAdvancedFields(true);
@@ -10310,7 +10333,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 		}
 
 		// query result vector
-		ArrayList<HashMap<String, String>> res = null;
+		Vector<Hashtable<String, String>> res = null;
 		try
 		{
 			if(null == DAInst)
@@ -10331,7 +10354,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 		if(res.size() > 0)
 		{
-			HashMap<String, String> h = res.get(0);
+			Hashtable<String, String> h = res.get(0);
 
 			String mailadressen = "";
 
@@ -10471,7 +10494,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 					String userid = (String)session.get("userid");
 
-					// ArrayList<Object> csvresult = null;
+					// Vector csvresult = null;
 
 					if(fileNames.get(i).length() > 0)
 					{
@@ -10483,7 +10506,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 							String filename = fileNames.get(i).substring(fileNames.get(i).lastIndexOf(System.getProperty("file.separator")) + 1);
 							String filetype = filename.substring(filename.lastIndexOf(".") + 1);
 
-							HashMap<String, Object> fparams = new HashMap<>();
+							Hashtable fparams = new Hashtable();
 							fparams.put("size", "" + data.length);
 							fparams.put("paramname", "zinslistenfile");
 							fparams.put("name", filename);
@@ -10518,7 +10541,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 							TemplateReader tr = TemplateReader.getInstance();
 							DynGenDataObj myuploaddgd = tr.getFlavouredDGDForTemplate(templateType, global, session);
 
-							HashMap<String, Object> vars = this.getSubs("var");
+							Hashtable vars = this.getSubs("var");
 							for(Object key : vars.keySet())
 							{
 								try
@@ -10530,7 +10553,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 										String selector = this.getString("var." + key + ".SELECTOR");
 										if(selector.length() > 0)
 										{
-											HashMap<String, Object> opts = getValueMap(selector);
+											Hashtable opts = getValueMap(selector);
 											if(opts.containsKey(value))
 											{
 												value = (String)opts.get(value);
@@ -10815,7 +10838,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 * @param dgd
 	 *            the dgd
 	 */
-	protected void writeSlots(HashMap<String, Object> vals, DynGenDataObj dgd)
+	protected void writeSlots(Hashtable vals, DynGenDataObj dgd)
 	{
 		writeSlots(vals, dgd, false, false);
 	}
@@ -10833,7 +10856,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 * @param createObject
 	 *            the create object
 	 */
-	protected void writeSlots(HashMap<String, Object> vals, DynGenDataObj dgd, boolean setOnlySingleValue, boolean createObject)
+	protected void writeSlots(Hashtable vals, DynGenDataObj dgd, boolean setOnlySingleValue, boolean createObject)
 	{
 		String displayname = "";
 		if(flavour.equals("icrsfred") || flavour.equals("icrsare") || flavour.equals("icrswi"))
@@ -10845,11 +10868,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 		try
 		{
-			// StringBuilder resultcode = new StringBuilder();
-			HashMap<String, Object> slots = dgd.getSubs("slot");
-			for(String e : slots.keySet())
+			// StringBuffer resultcode = new StringBuffer();
+			Hashtable slots = dgd.getSubs("slot");
+			for(Enumeration e = slots.keys(); e.hasMoreElements();)
 			{
-				String name = e;
+				String name = (String)e.nextElement();
 
 				displayname = (String)dgd.get("slot." + name + "." + Tr.t("displayname", mylang));
 
@@ -10928,8 +10951,8 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 							// es koennten ja mehrere sein (bei simpleslot)
 							// TODO: nur wenn exposed?
 
-							StringBuilder multiSlotWritten = new StringBuilder();
-							StringBuilder multiRealSlotWritten = new StringBuilder();
+							StringBuffer multiSlotWritten = new StringBuffer();
+							StringBuffer multiRealSlotWritten = new StringBuffer();
 							for(int sx = 0; sx < myvals.length; sx++)
 							{
 								String slotval = myvals[sx].trim();
@@ -10937,7 +10960,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 								slotval = getDBEncodedValueOfString(slotval);
 								debug.chat("found value " + slotval + " for slot " + name);
 
-								HashMap<String, Object> slot_els = getMapping(ttype);
+								Hashtable slot_els = getMapping(ttype);
 
 								// SLOTVAL AUCH UPDATEN
 								String fid = null;
@@ -11008,8 +11031,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 									boolean noValueFound = true;
 									// Set Values for Slod DGD -> Key must be in the Format SLOTNAME___VARIABLEINTEMLATE
-									for(String key : vals.keySet())
+									for(Enumeration keys = vals.keys(); keys.hasMoreElements();)
 									{
+										String key = (String)keys.nextElement();
 										if(key.startsWith(name + "___"))
 										{
 											String value = (String)vals.get(key);
@@ -11207,7 +11231,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				sql = "SELECT SERVERPROPERTY('Collation') collation";
 			}
 
-			ArrayList<HashMap<String, String>> result;
+			Vector<Hashtable<String, String>> result;
 
 			QueryResult qr;
 			try
@@ -11226,7 +11250,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			{
 				for(int i = 0; i < result.size(); i++)
 				{
-					HashMap<String, String> row = result.get(i);
+					Hashtable<String, String> row = result.get(i);
 					if(row != null)
 					{
 						String collation = row.get("collation");
@@ -11260,7 +11284,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				Connector conn = new Connector();
 				DAInst = conn.getDataAgent();
 			}
-			ArrayList<HashMap<String, String>> result;
+			Vector<Hashtable<String, String>> result;
 			QueryResult qr;
 			try
 			{
@@ -11281,7 +11305,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			{
 				for(int i = 0; i < result.size(); i++)
 				{
-					HashMap<String, String> row = result.get(i);
+					Hashtable<String, String> row = result.get(i);
 					if(row != null)
 					{
 						dbEncodedString = row.get("encodedstring");
@@ -11310,7 +11334,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            zz Hashtable
 	 * @return Infostring
 	 */
-	private String getTopInfoStringFromZZHT(HashMap<String, Object> h)
+	private String getTopInfoStringFromZZHT(Hashtable h)
 	{
 		return getReportService().getTopInfoStringFromZZHT(h, session.getString("language"));
 	}
@@ -11351,10 +11375,10 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *
 	 * @return the mapping changes vector
 	 */
-	private ArrayList<HashMap<String, String>> getMappingChangesVector()
+	private Vector<Hashtable<String, String>> getMappingChangesVector()
 	{
 		String mappingchanges = getString("var.mappingchanges");
-		Vector mappingchangesV = new ArrayList<HashMap<String, String>>();
+		Vector mappingchangesV = new Vector<Hashtable<String, String>>();
 		if(mappingchanges.length() == 0)
 		{
 			return mappingchangesV;
@@ -11366,7 +11390,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			for(int i = 0; i < jsonArray.length(); i++)
 			{
 				JSONObject j = jsonArray.optJSONObject(i);
-				HashMap<String, String> data = new HashMap<String, String>();
+				Hashtable<String, String> data = new Hashtable<String, String>();
 				String oldname = j.getString("oldname");
 				String newname = j.getString("newname");
 				if(null != oldname && null != newname)
@@ -11554,7 +11578,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 						Path path = Path.of(cfg_zlimport);
 						byte[] data = Files.readAllBytes(path);
 
-						HashMap<String, Object> fparams = new HashMap<>();
+						Hashtable fparams = new Hashtable();
 						fparams.put("size", "" + data.length);
 						fparams.put("paramname", "zinslistenfile");
 						fparams.put("name", "zinslistenconfig.xml");
@@ -11605,7 +11629,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	{
 		boolean configHasChanged = false;
 
-		StringBuilder sb_postenchanges = new StringBuilder();
+		StringBuffer sb_postenchanges = new StringBuffer();
 		sb_postenchanges.append("\n");
 		sb_postenchanges.append("\nHausverwaltung: " + hausverwaltung);
 		sb_postenchanges.append("\n");
@@ -12067,7 +12091,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 		String url = dynurl + "?OID=" + id + "&VIEW=" + view + "&HOOK=SET&wrapper=NO&ESSENCEID=" + sessid + "&" + additionalParams;
 		String encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8);
-		StringBuilder urlSB = new StringBuilder();
+		StringBuffer urlSB = new StringBuffer();
 		urlSB.append(CoolWebTool.getUsedDomain(session));
 		urlSB.append(dynurl);
 		String hijaxtarget = CfgSingleton.getHijaxTarget(session);
@@ -12119,7 +12143,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 		try
 		{
-			ArgsHelper argsHelper = new ArgsHelper(new HashMap<String, Object>());
+			ArgsHelper argsHelper = new ArgsHelper(new Hashtable<String, Object>());
 			argsHelper.setMainTemplateType("CIMS.zinszeile");
 			argsHelper.setAdvancedFields(true);
 			argsHelper.addField("DOB.ID", "zzid");
@@ -12160,14 +12184,14 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				DAInst = conn.getDataAgent();
 			}
 			QueryResult qr = null;
-			ArrayList<HashMap<String, String>> result = null;
+			Vector<Hashtable<String, String>> result = null;
 
 			qr = DAInst.queryObjectWithResult(argsHelper.getArgs());
 			result = qr.getResult();
 
 			if(result != null && result.size() > 0)
 			{
-				HashMap<String, Object> row = result.get(0);
+				Hashtable row = result.get(0);
 
 				String zzId = String.valueOf(row.get("zzid"));
 				if(zzId != null && zzId.length() > 0)
@@ -12191,13 +12215,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the session 2
 	 * @return the oid and area of vacant rentrolls
 	 */
-	private HashMap<String, String> getOidAndAreaOfVacantRentrolls(DynGenDataObj session2)
+	private Hashtable<String, String> getOidAndAreaOfVacantRentrolls(DynGenDataObj session2)
 	{
-		HashMap<String, String> oidAndArea = new HashMap<>();
+		Hashtable<String, String> oidAndArea = new Hashtable<>();
 
 		try
 		{
-			ArrayList<HashMap<String, String>> res = new ArrayList<HashMap<String, String>>();
+			Vector<Hashtable<String, String>> res = new Vector<Hashtable<String, String>>();
 
 			ArgsHelper argsHelper = new ArgsHelper();
 			argsHelper.setMainTemplateType("CIMS.top");
@@ -12223,7 +12247,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				for(int i = 0; i < res.size(); i++)
 				{
 
-					HashMap<String, String> row = res.get(i);
+					Hashtable<String, String> row = res.get(i);
 
 					String oid = row.get("oid");
 					String mvflaeche = row.get("mvflaeche");
@@ -12264,7 +12288,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the assetmanager
 	 * @return the ablaufende vertraege for assetmanager
 	 */
-	private HashMap<String, String> getAblaufendeVertraegeForAssetmanager(Calendar startDatum, Calendar endDatum, String assetmanager)
+	private Hashtable<String, String> getAblaufendeVertraegeForAssetmanager(Calendar startDatum, Calendar endDatum, String assetmanager)
 	{
 		return getUtilityService().getAblaufendeVertraegeForAssetmanager(startDatum, endDatum, assetmanager);
 	}
@@ -12276,13 +12300,13 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the session 2
 	 * @return the all assetmanager and ids
 	 */
-	private HashMap<String, String> getAllAssetmanagerAndIds(DynGenDataObj session2)
+	private Hashtable<String, String> getAllAssetmanagerAndIds(DynGenDataObj session2)
 	{
-		HashMap<String, String> assetmanagerAndIDs = new HashMap<>();
+		Hashtable<String, String> assetmanagerAndIDs = new Hashtable<>();
 
 		try
 		{
-			ArrayList<HashMap<String, String>> res = new ArrayList<HashMap<String, String>>();
+			Vector<Hashtable<String, String>> res = new Vector<Hashtable<String, String>>();
 
 			ArgsHelper argsHelper = new ArgsHelper();
 
@@ -12303,11 +12327,11 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 
 			if(res != null && res.size() > 0)
 			{
-				StringBuilder resultLines = new StringBuilder();
+				StringBuffer resultLines = new StringBuffer();
 
 				for(int i = 0; i < res.size(); i++)
 				{
-					HashMap<String, String> row = res.get(i);
+					Hashtable<String, String> row = res.get(i);
 
 					String oid = row.get("oid");
 					String assetmanagername = row.get("assetmanagername");
@@ -12336,9 +12360,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 *            the uploadlistetypeconfig
 	 * @return the data from the databasesource query
 	 */
-	protected ArrayList<Object> getDatabaseContent(String databasesource, String uploadlistetypeconfig)
+	protected Vector getDatabaseContent(String databasesource, String uploadlistetypeconfig)
 	{
-		ArrayList<Object> excelUploadData = null;
+		Vector excelUploadData = null;
 
 		DatabaseSource uq = executeDatabaseSource(databasesource, uploadlistetypeconfig);
 		if(uq == null)
@@ -12449,9 +12473,9 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			DatabaseSourceConfig uploadDatabaseSourceConfig = getUploadDatabaseSourceConfig(databasesource, uploadlistetypeconfig);
 			DatabaseSource uploadDatabaseSource = uploadDatabaseSourceConfig.getDatabaseSource();
 			// TODO statement params
-			HashMap<String, String> selectstatementParams = uploadDatabaseSource.getSelectstatementParams();
+			Hashtable<String, String> selectstatementParams = uploadDatabaseSource.getSelectstatementParams();
 
-			HashMap<String, String> paramValues = null;
+			Hashtable<String, String> paramValues = null;
 
 			String month = getString("var.monatvon");
 			String year = getString("var.jahrvon");
@@ -12478,7 +12502,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 			String startOfMonth = "01." + tmpMonth + "." + year;
 			String endOfMonth = lastDayOfMonth + "." + tmpMonth + "." + year;
 
-			paramValues = new HashMap<>();
+			paramValues = new Hashtable<>();
 			paramValues.put("{startofmonth}", startOfMonth);
 			paramValues.put("{endofmonth}", endOfMonth);
 
@@ -13041,7 +13065,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 	 * @param zl
 	 * @param dgd
 	 */
-	private void modifyLetzteIndexierung(HashMap<String, Object> ht, Zinsliste zl, DynGenDataObj dgd)
+	private void modifyLetzteIndexierung(Hashtable ht, Zinsliste zl, DynGenDataObj dgd)
 	{
 		try
 		{
@@ -13138,7 +13162,7 @@ public class UploadXLS5 extends DynGenDataObj implements Process
 				}
 				if((dateLetzteIndexierung != null && dateLetzteIndexierung.after(DateImportdate)) || (indexbasisdatum == null || indexbasisdatum.length() == 0))
 				{
-					HashMap<String, String> lastindexbasisdatumHash = getLatestIndexDatumFromZZ(hausOid, topname, jahr, monat, mietvertragvonzl);
+					Hashtable<String, String> lastindexbasisdatumHash = getLatestIndexDatumFromZZ(hausOid, topname, jahr, monat, mietvertragvonzl);
 					if(lastindexbasisdatumHash != null)
 					{
 						String indexdatum = lastindexbasisdatumHash.get("indexdatum");
